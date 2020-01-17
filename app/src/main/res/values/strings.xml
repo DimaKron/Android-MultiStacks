@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">MultiStacks</string>
+
+    <string name="main_item_home">Home</string>
+    <string name="main_item_news">News</string>
+    <string name="main_item_favourite">Favourite</string>
+    <string name="main_item_profile">Profile</string>
+</resources>
