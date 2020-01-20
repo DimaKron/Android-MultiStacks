@@ -5,10 +5,9 @@ import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.activity_main.*
-import ru.dimakron.multistacks_lib.IMultiStackActivity
 import ru.dimakron.multistacks_lib.MultiStacks
 
-class MainActivity : AppCompatActivity(), IMultiStackActivity {
+class MainActivity : AppCompatActivity(), IMainActivity {
 
     private val tabs = listOf(
         NavigationTab(R.id.item_home) { SimpleFragment.newInstance(getString(R.string.main_item_home)) },
@@ -59,6 +58,15 @@ class MainActivity : AppCompatActivity(), IMultiStackActivity {
 
     override fun pushFragment(fragment: Fragment) {
         multiStacks.push(fragment)
+    }
+
+    override fun switchToHome() {
+        bottomNavigationView.selectedItemId = R.id.item_home
+    }
+
+    override fun switchToNewHome() {
+        bottomNavigationView.selectedItemId = R.id.item_home
+        multiStacks.clearStack(SimpleFragment.newInstance(getString(R.string.simple_text_new_home)))
     }
 
     private fun onNavigationItemSelected(item: MenuItem): Boolean {

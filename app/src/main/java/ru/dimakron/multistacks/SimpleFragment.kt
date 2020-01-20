@@ -1,13 +1,15 @@
 package ru.dimakron.multistacks
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.fragment_simple.*
-import ru.dimakron.multistacks_lib.MultiStackFragment
+import ru.dimakron.multistacks_lib.IMultiStackFragment
 
-class SimpleFragment: MultiStackFragment() {
+class SimpleFragment: Fragment(), IMultiStackFragment {
 
     companion object{
         fun newInstance(tabName: String, depth: Int = 0) = SimpleFragment().apply {
@@ -18,8 +20,15 @@ class SimpleFragment: MultiStackFragment() {
         }
     }
 
+    private var mainActivity: IMainActivity? = null
+
     private var tabName: String? = null
     private var depth: Int? = null
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        mainActivity = context as? IMainActivity
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +47,9 @@ class SimpleFragment: MultiStackFragment() {
         tabNameTextView.text = getString(R.string.simple_text_tab_name, tabName)
         depthTextView.text = getString(R.string.simple_text_depth, depth)
 
-        addFragmentButton.setOnClickListener { multiStackActivity?.pushFragment(newInstance(tabName.toString(), (depth?: 0) + 1)) }
+        addFragmentButton.setOnClickListener { mainActivity?.pushFragment(newInstance(tabName.toString(), (depth?: 0) + 1)) }
+        switchToHomeButton.setOnClickListener { mainActivity?.switchToHome() }
+        switchToNewHomeButton.setOnClickListener { mainActivity?.switchToNewHome() }
     }
 
 }

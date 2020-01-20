@@ -27,5 +27,19 @@
         android:layout_marginTop="36dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/switchToHomeButton"
+        android:text="@string/simple_button_switch_to_home"
+        android:layout_marginTop="12dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/switchToNewHomeButton"
+        android:text="@string/simple_button_switch_to_new_home"
+        android:layout_marginTop="12dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
     
 </LinearLayout>
