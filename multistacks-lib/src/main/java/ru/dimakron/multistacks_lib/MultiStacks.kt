@@ -22,7 +22,19 @@ class MultiStacks private constructor(builder: Builder) {
     init {
         //if (!restoreFromBundle(builder.savedInstanceState, builder.mRootFragments)) { TODO Временно закомментированно
         builder.rootFragmentInitializers.forEach { fragmentStacks.add(mutableListOf(it())) }
-        initialize(builder.selectedTabIndex)
+
+        val transaction = createTransaction()
+
+        fragmentManager.fragments.forEach { transaction.remove(it) }
+
+        val fragment = getRootFragment(selectedTabIndex)
+        transaction.add(containerId, fragment, fragment.generateTag())
+        transaction.commit()
+
+        executePendingTransactions()
+
+        mCurrentFragment = fragment
+        transactionListener?.onTabTransaction(mCurrentFragment, selectedTabIndex)
         //}
     }
 
@@ -106,9 +118,7 @@ class MultiStacks private constructor(builder: Builder) {
         transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
 
-    /*
-    * Если rootFragment != null, то стек очищается вместе с корневым фрагментом и на его место помещается rootFragment
-    * */
+    // Current root fragment replaces with rootFragment if rootFragment != null
     fun clearStack(rootFragment: Fragment? = null) {
         val currentStack = fragmentStacks[selectedTabIndex]
 
@@ -170,25 +180,6 @@ class MultiStacks private constructor(builder: Builder) {
         currentStack.add(fragment)
         mCurrentFragment = fragment
         transactionListener?.onFragmentTransaction(mCurrentFragment)
-    }
-
-    private fun initialize(index: Int) {
-        selectedTabIndex = index
-
-        require(selectedTabIndex <= fragmentStacks.size) { "Starting index cannot be larger than the number of stacks" }
-
-        val transaction = createTransaction()
-
-        fragmentManager.fragments.forEach { transaction.remove(it) }
-
-        val fragment = getRootFragment(index)
-        transaction.add(containerId, fragment, fragment.generateTag())
-        transaction.commit()
-
-        executePendingTransactions()
-
-        mCurrentFragment = fragment
-        transactionListener?.onTabTransaction(mCurrentFragment, selectedTabIndex)
     }
 
     private fun getRootFragment(index: Int) =
