@@ -10,4 +10,6 @@ interface IMainActivity {
 
     fun switchToNewHome()
 
+    fun replaceWithProfile()
+
 }

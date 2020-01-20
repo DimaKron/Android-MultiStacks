@@ -25,6 +25,8 @@ class SimpleFragment: Fragment(), IMultiStackFragment {
     private var tabName: String? = null
     private var depth: Int? = null
 
+    override fun getIdentifierInStack() = 0
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         mainActivity = context as? IMainActivity
@@ -50,6 +52,7 @@ class SimpleFragment: Fragment(), IMultiStackFragment {
         addFragmentButton.setOnClickListener { mainActivity?.pushFragment(newInstance(tabName.toString(), (depth?: 0) + 1)) }
         switchToHomeButton.setOnClickListener { mainActivity?.switchToHome() }
         switchToNewHomeButton.setOnClickListener { mainActivity?.switchToNewHome() }
+        replaceWithProfileButton.setOnClickListener { mainActivity?.replaceWithProfile() }
     }
 
 }

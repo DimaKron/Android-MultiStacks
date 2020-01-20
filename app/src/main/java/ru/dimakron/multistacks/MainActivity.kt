@@ -69,6 +69,10 @@ class MainActivity : AppCompatActivity(), IMainActivity {
         multiStacks.clearStack(SimpleFragment.newInstance(getString(R.string.simple_text_new_home)))
     }
 
+    override fun replaceWithProfile() {
+        multiStacks.replace(SimpleFragment.newInstance(getString(R.string.main_item_profile)))
+    }
+
     private fun onNavigationItemSelected(item: MenuItem): Boolean {
         val newPosition = tabs.indexOfFirst { it.tabId == item.itemId }
 

@@ -152,7 +152,7 @@ class MultiStacks private constructor(builder: Builder) {
         transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
 
-    fun replaceFragment(fragment: Fragment) {
+    fun replace(fragment: Fragment) {
         if(getCurrentFragment() == null) return
 
         val transaction = createTransaction()
@@ -163,14 +163,12 @@ class MultiStacks private constructor(builder: Builder) {
             currentStack.removeAt(currentStack.size - 1)
         }
 
-        // Работа этой конструкции внутри этого метода не проверялась
-        /*if ((fragment as? BaseFragment<*>)?.getIdentifierInStack() != null){ TODO Временно закомментированно
-            currentStack.filter { (it as? BaseFragment<*>)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
+        if ((fragment as? IMultiStackFragment)?.getIdentifierInStack() != null)
+            currentStack.filter { (it as? IMultiStackFragment)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
                     .forEach { f ->
                         currentStack.remove(f)
-                        mFragmentManager.findFragmentByTag(f.tag)?.let { transaction.remove(it) }
+                        fragmentManager.findFragmentByTag(f.tag)?.let { transaction.remove(it) }
                     }
-        }*/
 
         transaction.replace(containerId, fragment, fragment.generateTag())
         transaction.commit()
@@ -178,9 +176,19 @@ class MultiStacks private constructor(builder: Builder) {
         executePendingTransactions()
 
         currentStack.add(fragment)
+
         mCurrentFragment = fragment
         transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
+
+    fun getCurrentFragment(): Fragment? {
+        if (mCurrentFragment == null){
+            mCurrentFragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
+        }
+        return mCurrentFragment
+    }
+
+    fun isRootFragment() = fragmentStacks[selectedTabIndex].size == 1
 
     private fun getRootFragment(index: Int) =
         fragmentStacks.getOrNull(index)?.lastOrNull()?: throw IllegalStateException("No root fragment for index = $index")
@@ -189,13 +197,6 @@ class MultiStacks private constructor(builder: Builder) {
         val fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
         fragment?.let { transaction.attach(it) }
         return fragment
-    }
-
-    fun getCurrentFragment(): Fragment? {
-        if (mCurrentFragment == null){
-            mCurrentFragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
-        }
-        return mCurrentFragment
     }
 
     private fun createTransaction(): FragmentTransaction {
@@ -224,8 +225,6 @@ class MultiStacks private constructor(builder: Builder) {
     }
 
     private fun Fragment.generateTag()= this::class.java.name + (++tagCounter)
-
-    fun isRootFragment() = fragmentStacks[selectedTabIndex].size == 1
 
     /*fun onSaveInstanceState(outState: Bundle) { TODO Временно закомментированно
         outState.putInt(Constants.Extras.FragNavController.TAG_COUNT, mTagCount)
