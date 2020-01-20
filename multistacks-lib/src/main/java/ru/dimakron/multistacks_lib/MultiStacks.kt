@@ -52,22 +52,19 @@ class MultiStacks private constructor(builder: Builder) {
 
     fun getSelectedTabIndex() = selectedTabIndex
 
-    fun pushFragment(fragment: Fragment?, transactionOptions: TransactionOptions? = null) {
-        if (fragment == null) return
-
+    fun push(fragment: Fragment, options: TransactionOptions? = null) {
         val currentStack = fragmentStacks[selectedTabIndex]
 
-        val transaction = createTransaction(transactionOptions)
+        val transaction = createTransaction(options)
 
         getCurrentFragment()?.let { transaction.detach(it) }
 
-        /*if ((fragment as? BaseFragment<*>)?.getIdentifierInStack() != null){ TODO Временно закомментированно
-            currentStack.filter { (it as? BaseFragment<*>)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
-                    .forEach { f ->
-                        currentStack.remove(f)
-                        mFragmentManager.findFragmentByTag(f.tag)?.let { transaction.remove(it) }
-                    }
-        }*/
+        if ((fragment as? Stackable)?.getIdentifierInStack() != null)
+            currentStack.filter { (it as? Stackable)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
+                .forEach { f ->
+                    currentStack.remove(f)
+                    fragmentManager.findFragmentByTag(f.tag)?.let { transaction.remove(it) }
+                }
 
         transaction.add(containerId, fragment, fragment.generateTag())
         transaction.commit()
@@ -218,24 +215,18 @@ class MultiStacks private constructor(builder: Builder) {
         transactionListener?.onTabTransaction(mCurrentFragment, selectedTabIndex)
     }
 
-    private fun getRootFragment(index: Int): Fragment {
-        val fragment = fragmentStacks.getOrNull(index)?.lastOrNull()
-
-        checkNotNull(fragment) { "Either you haven't past in a fragment at this index in your constructor, or you haven't " +
-                "provided a way to create it while via your RootFragmentListener.getRootFragment(index)" }
-
-        return fragment
-    }
+    private fun getRootFragment(index: Int) =
+        fragmentStacks.getOrNull(index)?.lastOrNull()?: throw IllegalStateException("No root fragment for index = $index")
 
     private fun reattachPreviousFragment(transaction: FragmentTransaction): Fragment? {
-        val fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
+        val fragment = fragmentManager.findFragmentByTag(getRootFragment(selectedTabIndex).tag)
         fragment?.let { transaction.attach(it) }
         return fragment
     }
 
     fun getCurrentFragment(): Fragment? {
         if (mCurrentFragment == null){
-            mCurrentFragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
+            mCurrentFragment = fragmentManager.findFragmentByTag(getRootFragment(selectedTabIndex).tag)
         }
         return mCurrentFragment
     }
