@@ -5,4 +5,8 @@
     <string name="main_item_news">News</string>
     <string name="main_item_favourite">Favourite</string>
     <string name="main_item_profile">Profile</string>
+
+    <string name="simple_button_add_fragment">Add fragment</string>
+    <string name="simple_text_tab_name">Tab: %s</string>
+    <string name="simple_text_depth">Depth: %d</string>
 </resources>

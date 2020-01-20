@@ -418,14 +418,17 @@ class MultiStacks private constructor(builder: Builder) {
 
         var savedInstanceState: Bundle? = null
         val rootFragmentInitializers = mutableListOf<() -> Fragment>()
+        var selectedTabIndex = 0
         var transactionOptions: FragNavTransactionOptions? = null
         //var mTransactionListener: TransactionListener? = null TODO
 
         fun setState(state: Bundle?) = apply { savedInstanceState = state }
 
-        fun setTransactionOptions(options: FragNavTransactionOptions?) = apply { transactionOptions = options }
-
         fun setRootFragmentInitializers(initializers: List<() -> Fragment>) = apply { rootFragmentInitializers.replaceWith(initializers) }
+
+        fun setSelectedTabIndex(index: Int) = apply { selectedTabIndex = index }
+
+        fun setTransactionOptions(options: FragNavTransactionOptions?) = apply { transactionOptions = options }
 
         //fun transactionListener(listener: TransactionListener) = apply { mTransactionListener = listener } TODO
 

@@ -9,10 +9,10 @@ import ru.dimakron.multistacks_lib.MultiStacks
 class MainActivity : AppCompatActivity() {
 
     private val tabs = listOf(
-        NavigationTab(R.id.item_home) { SimpleFragment.newInstance() },
-        NavigationTab(R.id.item_news) { SimpleFragment.newInstance() },
-        NavigationTab(R.id.item_favourite) { SimpleFragment.newInstance() },
-        NavigationTab(R.id.item_profile) { SimpleFragment.newInstance() }
+        NavigationTab(R.id.item_home) { SimpleFragment.newInstance(getString(R.string.main_item_home)) },
+        NavigationTab(R.id.item_news) { SimpleFragment.newInstance(getString(R.string.main_item_news)) },
+        NavigationTab(R.id.item_favourite) { SimpleFragment.newInstance(getString(R.string.main_item_favourite)) },
+        NavigationTab(R.id.item_profile) { SimpleFragment.newInstance(getString(R.string.main_item_profile)) }
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
