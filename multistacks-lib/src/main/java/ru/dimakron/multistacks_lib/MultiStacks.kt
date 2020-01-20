@@ -35,7 +35,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         val transaction = createTransaction(options)
 
-        getCurrentFrag()?.let { transaction.detach(it) }
+        getCurrentFragment()?.let { transaction.detach(it) }
 
         var fragment = reattachPreviousFragment(transaction)
         if (fragment == null) {
@@ -59,7 +59,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         val transaction = createTransaction(transactionOptions)
 
-        getCurrentFrag()?.let { transaction.detach(it) }
+        getCurrentFragment()?.let { transaction.detach(it) }
 
         /*if ((fragment as? BaseFragment<*>)?.getIdentifierInStack() != null){ TODO Временно закомментированно
             currentStack.filter { (it as? BaseFragment<*>)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
@@ -170,7 +170,7 @@ class MultiStacks private constructor(builder: Builder) {
     }
 
     fun replaceFragment(fragment: Fragment, transactionOptions: TransactionOptions? = null) {
-        if(getCurrentFrag() == null) return
+        if(getCurrentFragment() == null) return
 
         val transaction = createTransaction(transactionOptions)
 
@@ -219,12 +219,7 @@ class MultiStacks private constructor(builder: Builder) {
     }
 
     private fun getRootFragment(index: Int): Fragment {
-        var fragment: Fragment? = null
-
-        val stack = fragmentStacks[index]
-        if (stack.isNotEmpty()) {
-            fragment = stack[stack.size - 1]
-        }
+        val fragment = fragmentStacks.getOrNull(index)?.lastOrNull()
 
         checkNotNull(fragment) { "Either you haven't past in a fragment at this index in your constructor, or you haven't " +
                 "provided a way to create it while via your RootFragmentListener.getRootFragment(index)" }
@@ -232,46 +227,24 @@ class MultiStacks private constructor(builder: Builder) {
         return fragment
     }
 
-    private fun reattachPreviousFragment(ft: FragmentTransaction): Fragment? {
-        var fragment: Fragment? = null
-
-        val currentStack = fragmentStacks[selectedTabIndex]
-        if (currentStack.isNotEmpty()) {
-            fragment = fragmentManager.findFragmentByTag(currentStack[currentStack.size - 1].tag)
-            fragment?.let { ft.attach(it) }
-        }
-
+    private fun reattachPreviousFragment(transaction: FragmentTransaction): Fragment? {
+        val fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
+        fragment?.let { transaction.attach(it) }
         return fragment
     }
 
-    fun getCurrentFrag(): Fragment? {
-        if (mCurrentFragment != null) {
-            return mCurrentFragment
-        } else {
-            val currentStack = fragmentStacks[selectedTabIndex]
-            if (currentStack.isNotEmpty()) {
-                mCurrentFragment = fragmentManager.findFragmentByTag(currentStack[currentStack.size - 1].tag)
-            }
+    fun getCurrentFragment(): Fragment? {
+        if (mCurrentFragment == null){
+            mCurrentFragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
         }
         return mCurrentFragment
     }
 
-    private fun Fragment.generateTag()= this::class.java.name + (++tagCounter)
-
-    private fun executePendingTransactions() {
-        if (!isTransactionExecuting) {
-            isTransactionExecuting = true
-            fragmentManager.executePendingTransactions()
-            isTransactionExecuting = false
-        }
-    }
-
     private fun clearFragmentManager() {
         val transaction = createTransaction()
-
         fragmentManager.fragments.forEach { transaction.remove(it) }
-
         transaction.commit()
+
         executePendingTransactions()
     }
 
@@ -293,6 +266,16 @@ class MultiStacks private constructor(builder: Builder) {
 
         return transaction
     }
+
+    private fun executePendingTransactions() {
+        if (!isTransactionExecuting) {
+            isTransactionExecuting = true
+            fragmentManager.executePendingTransactions()
+            isTransactionExecuting = false
+        }
+    }
+
+    private fun Fragment.generateTag()= this::class.java.name + (++tagCounter)
 
     fun isRootFragment() = fragmentStacks[selectedTabIndex].size == 1
 
