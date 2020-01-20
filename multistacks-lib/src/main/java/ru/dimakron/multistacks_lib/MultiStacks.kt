@@ -142,7 +142,6 @@ class MultiStacks private constructor(builder: Builder) {
         transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
 
-    // TODO ------------------------------------------------------------
     fun replaceFragment(fragment: Fragment) {
         if(getCurrentFragment() == null) return
 
@@ -178,9 +177,9 @@ class MultiStacks private constructor(builder: Builder) {
 
         require(selectedTabIndex <= fragmentStacks.size) { "Starting index cannot be larger than the number of stacks" }
 
-        clearFragmentManager()
-
         val transaction = createTransaction()
+
+        fragmentManager.fragments.forEach { transaction.remove(it) }
 
         val fragment = getRootFragment(index)
         transaction.add(containerId, fragment, fragment.generateTag())
@@ -206,14 +205,6 @@ class MultiStacks private constructor(builder: Builder) {
             mCurrentFragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
         }
         return mCurrentFragment
-    }
-
-    private fun clearFragmentManager() {
-        val transaction = createTransaction()
-        fragmentManager.fragments.forEach { transaction.remove(it) }
-        transaction.commit()
-
-        executePendingTransactions()
     }
 
     private fun createTransaction(): FragmentTransaction {
