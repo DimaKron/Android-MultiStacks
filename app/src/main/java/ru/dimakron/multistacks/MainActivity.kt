@@ -37,6 +37,30 @@ class MainActivity : AppCompatActivity(), IMultiStackActivity {
         super.onDestroy()
     }
 
+    override fun onBackPressed() {
+        if (multiStacks.isRootFragment()) {
+            /*val history = tabsHistory ?: return
+            when {
+                history.isEmpty() -> showExitDialog()
+                history.getSize() > 1 -> {
+                    history.pop()
+                    bottomMenu?.selectedItemId = navigationTabs[history.peek()!!].tabId
+                }
+                else -> {
+                    bottomMenu?.selectedItemId = navigationTabs[0].tabId
+                    history.clear()
+                }
+            }*/
+            super.onBackPressed()
+        } else {
+            multiStacks.popFragments(1)
+        }
+    }
+
+    override fun pushFragment(fragment: Fragment) {
+        multiStacks.push(fragment)
+    }
+
     private fun onNavigationItemSelected(item: MenuItem): Boolean {
         val newPosition = tabs.indexOfFirst { it.tabId == item.itemId }
 
@@ -48,9 +72,5 @@ class MainActivity : AppCompatActivity(), IMultiStackActivity {
         }
 
         return true
-    }
-
-    override fun pushFragment(fragment: Fragment) {
-        multiStacks.push(fragment)
     }
 }

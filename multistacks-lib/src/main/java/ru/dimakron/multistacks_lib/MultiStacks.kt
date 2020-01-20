@@ -77,20 +77,19 @@ class MultiStacks private constructor(builder: Builder) {
         transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
 
-    fun popFragments(popDepth: Int, transactionOptions: TransactionOptions? = null) {
-        check(!isRootFragment()) { "You can not popFragment the rootFragment. If you need to change this fragment, use replaceFragment(fragment)" }
-        require(popDepth >= 1) { "popFragments parameter needs to be greater than 0" }
+    fun popFragments(depth: Int, options: TransactionOptions? = null) {
+        require(depth >= 1) { "Pop depth should be greater than 0" }
 
         val currentStack = fragmentStacks[selectedTabIndex]
 
-        if (popDepth >= currentStack.size - 1) {
-            clearStack(transactionOptions)
+        if (depth >= currentStack.size - 1) {
+            clearStack(options)
             return
         }
 
-        val transaction = createTransaction(transactionOptions)
+        val transaction = createTransaction(options)
 
-        for (i in 0 until popDepth) {
+        for (i in 0 until depth) {
             fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
         }
 
