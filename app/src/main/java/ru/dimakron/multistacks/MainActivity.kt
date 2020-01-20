@@ -3,6 +3,7 @@ package ru.dimakron.multistacks
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.MenuItem
+import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.activity_main.*
 import ru.dimakron.multistacks_lib.MultiStacks
 
@@ -44,7 +45,7 @@ class MainActivity : AppCompatActivity() {
             tabsHistory?.push(newPosition)
         }*/
 
-        multiStacks.switchTab(newPosition)
+        multiStacks.setSelectedTabIndex(newPosition)
 
         return true
     }

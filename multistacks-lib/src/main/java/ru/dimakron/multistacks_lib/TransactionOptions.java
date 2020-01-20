@@ -9,7 +9,7 @@ import androidx.core.util.Pair;
 import java.util.List;
 
 
-public class FragNavTransactionOptions {
+public class TransactionOptions {
     List<Pair<View, String>> sharedElements;
     int transition;
     @AnimRes
@@ -25,7 +25,7 @@ public class FragNavTransactionOptions {
     String breadCrumbTitle;
     String breadCrumbShortTitle;
 
-    private FragNavTransactionOptions(Builder builder) {
+    private TransactionOptions(Builder builder) {
         sharedElements = builder.sharedElements;
         transition = builder.transition;
         enterAnimation = builder.enterAnimation;
@@ -64,8 +64,8 @@ public class FragNavTransactionOptions {
         }
 
 
-        public FragNavTransactionOptions build() {
-            return new FragNavTransactionOptions(this);
+        public TransactionOptions build() {
+            return new TransactionOptions(this);
         }
     }
 }
