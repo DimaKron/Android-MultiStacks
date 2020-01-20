@@ -4,37 +4,32 @@ import android.os.Bundle
 import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentTransaction
+import org.json.JSONArray
 
 class MultiStacks private constructor(builder: Builder) {
 
-    /*companion object{
-        const val MAX_TABS = 5
+    private val mContainerId = builder.containerId
+    private val mFragmentManager = builder.fragmentManager
 
-        fun newBuilder(savedInstanceState: Bundle?, fragmentManager: FragmentManager, containerId: Int) = Builder(savedInstanceState, fragmentManager, containerId)
-    }
-
-    private val mContainerId = builder.mContainerId
-    private val mFragmentManager = builder.mFragmentManager
     private val mFragmentStacks = mutableListOf<MutableList<Fragment>>()
-    private val mRootFragmentListener = builder.mRootFragmentListener
-    private val mTransactionListener = builder.mTransactionListener
-    private val mDefaultTransactionOptions = builder.mDefaultTransactionOptions
-    private var mSelectedTabIndex = builder.mSelectedTabIndex
+    private val mTransactionListener = builder.transactionListener
+    private val mDefaultTransactionOptions = builder.transactionOptions
+    private var mSelectedTabIndex = builder.selectedTabIndex
 
     private var mCurrentFrag: Fragment? = null
-    private var mCurrentDialogFrag: DialogFragment? = null
     private var mTagCount = 0
     private var mExecutingTransaction = false
 
     init {
-        if (!restoreFromBundle(savedInstanceState, builder.mRootFragments)) {
-            for (i in 0 until builder.mNumberOfTabs) {
+        //if (!restoreFromBundle(builder.savedInstanceState, builder.mRootFragments)) { TODO Временно закомментированно
+            for (initializer in builder.rootFragmentInitializers) {
                 val stack = mutableListOf<Fragment>()
-                builder.mRootFragments?.getOrNull(i)?.let { stack.add(it) }
+                stack.add(initializer())
                 mFragmentStacks.add(stack)
             }
-            initialize(builder.mSelectedTabIndex)
-        }
+            initialize(builder.selectedTabIndex)
+        //}
     }
 
     fun switchTab(index: Int, transactionOptions: FragNavTransactionOptions? = null){
@@ -73,13 +68,13 @@ class MultiStacks private constructor(builder: Builder) {
 
         getCurrentFrag()?.let { transaction.detach(it) }
 
-        if ((fragment as? BaseFragment<*>)?.getIdentifierInStack() != null){
+        /*if ((fragment as? BaseFragment<*>)?.getIdentifierInStack() != null){ TODO Временно закомментированно
             currentStack.filter { (it as? BaseFragment<*>)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
                     .forEach { f ->
                         currentStack.remove(f)
                         mFragmentManager.findFragmentByTag(f.tag)?.let { transaction.remove(it) }
                     }
-        }
+        }*/
 
         transaction.add(mContainerId, fragment, generateTag(fragment))
         transaction.commit()
@@ -89,7 +84,7 @@ class MultiStacks private constructor(builder: Builder) {
         currentStack.add(fragment)
 
         mCurrentFrag = fragment
-        mTransactionListener?.onFragmentTransaction(mCurrentFrag, TransactionType.PUSH)
+        mTransactionListener?.onFragmentTransaction(mCurrentFrag)
     }
 
     fun popFragments(popDepth: Int, transactionOptions: FragNavTransactionOptions? = null) {
@@ -134,7 +129,7 @@ class MultiStacks private constructor(builder: Builder) {
         }
 
         mCurrentFrag = fragment
-        mTransactionListener?.onFragmentTransaction(mCurrentFrag, TransactionType.POP)
+        mTransactionListener?.onFragmentTransaction(mCurrentFrag)
     }
 
     /*
@@ -178,7 +173,7 @@ class MultiStacks private constructor(builder: Builder) {
         }*/
 
         mCurrentFrag = fragment
-        mTransactionListener?.onFragmentTransaction(mCurrentFrag, TransactionType.POP)
+        mTransactionListener?.onFragmentTransaction(mCurrentFrag)
     }
 
     fun replaceFragment(fragment: Fragment, transactionOptions: FragNavTransactionOptions? = null) {
@@ -193,13 +188,13 @@ class MultiStacks private constructor(builder: Builder) {
         }
 
         // Работа этой конструкции внутри этого метода не проверялась
-        if ((fragment as? BaseFragment<*>)?.getIdentifierInStack() != null){
+        /*if ((fragment as? BaseFragment<*>)?.getIdentifierInStack() != null){ TODO Временно закомментированно
             currentStack.filter { (it as? BaseFragment<*>)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
                     .forEach { f ->
                         currentStack.remove(f)
                         mFragmentManager.findFragmentByTag(f.tag)?.let { transaction.remove(it) }
                     }
-        }
+        }*/
 
         transaction.replace(mContainerId, fragment, generateTag(fragment))
         transaction.commit()
@@ -208,41 +203,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         currentStack.add(fragment)
         mCurrentFrag = fragment
-        mTransactionListener?.onFragmentTransaction(mCurrentFrag, TransactionType.REPLACE)
-    }
-
-    fun getCurrentDialogFrag(): DialogFragment? {
-        if (mCurrentDialogFrag != null) {
-            return mCurrentDialogFrag
-        } else {
-            val fragmentManager = mCurrentFrag?.childFragmentManager ?: mFragmentManager
-            fragmentManager.fragments.find { it is DialogFragment }?.let { mCurrentDialogFrag = it as DialogFragment }
-        }
-        return mCurrentDialogFrag
-    }
-
-    fun clearDialogFragment() {
-        if (mCurrentDialogFrag != null) {
-            mCurrentDialogFrag?.dismiss()
-            mCurrentDialogFrag = null
-        } else {
-            val fragmentManager = mCurrentFrag?.childFragmentManager ?: mFragmentManager
-            fragmentManager.fragments.forEach{ (it as? DialogFragment)?.dismiss() }
-        }
-    }
-
-    fun showDialogFragment(dialogFragment: DialogFragment?) {
-        if (dialogFragment == null) return
-
-        val fragmentManager = mCurrentFrag?.childFragmentManager?: mFragmentManager
-        fragmentManager.fragments.forEach { (it as? DialogFragment)?.dismiss() }
-
-        mCurrentDialogFrag = dialogFragment
-        try {
-            dialogFragment.show(fragmentManager, dialogFragment::class.java.simpleName)
-        } catch (ex: IllegalStateException) {
-            // Activity was likely destroyed before we had a chance to show, nothing can be done here.
-        }
+        mTransactionListener?.onFragmentTransaction(mCurrentFrag)
     }
 
     private fun initialize(index: Int) {
@@ -251,7 +212,6 @@ class MultiStacks private constructor(builder: Builder) {
         require(mSelectedTabIndex <= mFragmentStacks.size) { "Starting index cannot be larger than the number of stacks" }
 
         clearFragmentManager()
-        clearDialogFragment()
 
         val transaction = createTransactionWithOptions()
 
@@ -271,9 +231,6 @@ class MultiStacks private constructor(builder: Builder) {
         val stack = mFragmentStacks[index]
         if (stack.isNotEmpty()) {
             fragment = stack[stack.size - 1]
-        } else if (mRootFragmentListener != null) {
-            fragment = mRootFragmentListener.getRootFragment(index)
-            stack.add(fragment)
         }
 
         checkNotNull(fragment) { "Either you haven't past in a fragment at this index in your constructor, or you haven't " +
@@ -348,7 +305,7 @@ class MultiStacks private constructor(builder: Builder) {
 
     fun isRootFragment() = mFragmentStacks[mSelectedTabIndex].size == 1
 
-    fun onSaveInstanceState(outState: Bundle) {
+    /*fun onSaveInstanceState(outState: Bundle) { TODO Временно закомментированно
         outState.putInt(Constants.Extras.FragNavController.TAG_COUNT, mTagCount)
         outState.putInt(Constants.Extras.FragNavController.SELECTED_TAB_INDEX, mSelectedTabIndex)
         mCurrentFrag?.let { outState.putString(Constants.Extras.FragNavController.CURRENT_FRAGMENT, it.tag)  }
@@ -402,16 +359,12 @@ class MultiStacks private constructor(builder: Builder) {
         } catch (t: Throwable) {
             return false
         }
-    }
-
-    interface RootFragmentListener {
-        fun getRootFragment(index: Int): Fragment
-    }
+    } */
 
     interface TransactionListener {
         fun onTabTransaction(fragment: Fragment?, index: Int)
-        fun onFragmentTransaction(fragment: Fragment?, transactionType: TransactionType)
-    } */
+        fun onFragmentTransaction(fragment: Fragment?)
+    }
 
     class Builder(val fragmentManager: FragmentManager,
                   @IdRes val containerId: Int) {
@@ -420,7 +373,7 @@ class MultiStacks private constructor(builder: Builder) {
         val rootFragmentInitializers = mutableListOf<() -> Fragment>()
         var selectedTabIndex = 0
         var transactionOptions: FragNavTransactionOptions? = null
-        //var mTransactionListener: TransactionListener? = null TODO
+        var transactionListener: TransactionListener? = null
 
         fun setState(state: Bundle?) = apply { savedInstanceState = state }
 
@@ -430,7 +383,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         fun setTransactionOptions(options: FragNavTransactionOptions?) = apply { transactionOptions = options }
 
-        //fun transactionListener(listener: TransactionListener) = apply { mTransactionListener = listener } TODO
+        fun setTransactionListener(listener: TransactionListener) = apply { transactionListener = listener }
 
         fun build() = MultiStacks(this)
     }

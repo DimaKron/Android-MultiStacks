@@ -25,7 +25,7 @@ class SimpleFragment: Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         tabNameTextView.text = getString(R.string.simple_text_tab_name, arguments?.getString(Constants.Extras.TAB_NAME))
-        tabNameTextView.text = getString(R.string.simple_text_depth, arguments?.getInt(Constants.Extras.DEPTH))
+        depthTextView.text = getString(R.string.simple_text_depth, arguments?.getInt(Constants.Extras.DEPTH))
 
         addFragmentButton.setOnClickListener { /* TODO */ }
     }

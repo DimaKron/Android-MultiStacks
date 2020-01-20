@@ -15,13 +15,16 @@ class MainActivity : AppCompatActivity() {
         NavigationTab(R.id.item_profile) { SimpleFragment.newInstance(getString(R.string.main_item_profile)) }
     )
 
+    private lateinit var multiStacks: MultiStacks
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        MultiStacks.Builder(supportFragmentManager, R.id.containerLayout)
+        multiStacks = MultiStacks.Builder(supportFragmentManager, R.id.containerLayout)
             .setState(savedInstanceState)
             .setRootFragmentInitializers(tabs.map { it.fragmentInitializer })
+            .setSelectedTabIndex(0)
             .build()
 
         bottomNavigationView.setOnNavigationItemSelectedListener(this::onNavigationItemSelected)
@@ -33,14 +36,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onNavigationItemSelected(item: MenuItem): Boolean {
-        /*val newPosition = navigationTabs.indexOfFirst { it.tabId == item.itemId }
+        val newPosition = tabs.indexOfFirst { it.tabId == item.itemId }
 
-        if (navController?.getCurrentStackIndex() == newPosition) {
+        /*if (navController?.getCurrentStackIndex() == newPosition) {
             navController?.clearStack()
         } else {
             tabsHistory?.push(newPosition)
-        }
-        navController?.switchTab(newPosition)*/
+        }*/
+
+        multiStacks.switchTab(newPosition)
 
         return true
     }
