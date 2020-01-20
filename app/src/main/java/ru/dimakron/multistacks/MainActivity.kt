@@ -1,13 +1,14 @@
 package ru.dimakron.multistacks
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.activity_main.*
+import ru.dimakron.multistacks_lib.IMultiStackActivity
 import ru.dimakron.multistacks_lib.MultiStacks
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), IMultiStackActivity {
 
     private val tabs = listOf(
         NavigationTab(R.id.item_home) { SimpleFragment.newInstance(getString(R.string.main_item_home)) },
@@ -39,14 +40,17 @@ class MainActivity : AppCompatActivity() {
     private fun onNavigationItemSelected(item: MenuItem): Boolean {
         val newPosition = tabs.indexOfFirst { it.tabId == item.itemId }
 
-        /*if (navController?.getCurrentStackIndex() == newPosition) {
-            navController?.clearStack()
+        if (newPosition == multiStacks.getSelectedTabIndex()){
+            multiStacks.clearStack()
         } else {
-            tabsHistory?.push(newPosition)
-        }*/
-
-        multiStacks.setSelectedTabIndex(newPosition)
+            multiStacks.setSelectedTabIndex(newPosition)
+            //tabsHistory?.push(newPosition)
+        }
 
         return true
+    }
+
+    override fun pushFragment(fragment: Fragment) {
+        multiStacks.push(fragment)
     }
 }

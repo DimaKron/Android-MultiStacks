@@ -1,6 +1,6 @@
 package ru.dimakron.multistacks_lib
 
-interface Stackable{
+interface IMultiStackFragment{
 
     fun getIdentifierInStack(): Int? = null
 

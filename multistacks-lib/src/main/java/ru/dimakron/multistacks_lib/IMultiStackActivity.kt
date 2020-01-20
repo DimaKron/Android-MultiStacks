@@ -2,7 +2,7 @@ package ru.dimakron.multistacks_lib
 
 import androidx.fragment.app.Fragment
 
-interface FragmentNavigation {
+interface IMultiStackActivity {
 
     fun pushFragment(fragment: Fragment)
 

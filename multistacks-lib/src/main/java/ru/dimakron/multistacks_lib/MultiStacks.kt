@@ -59,8 +59,8 @@ class MultiStacks private constructor(builder: Builder) {
 
         getCurrentFragment()?.let { transaction.detach(it) }
 
-        if ((fragment as? Stackable)?.getIdentifierInStack() != null)
-            currentStack.filter { (it as? Stackable)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
+        if ((fragment as? IMultiStackFragment)?.getIdentifierInStack() != null)
+            currentStack.filter { (it as? IMultiStackFragment)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
                 .forEach { f ->
                     currentStack.remove(f)
                     fragmentManager.findFragmentByTag(f.tag)?.let { transaction.remove(it) }
