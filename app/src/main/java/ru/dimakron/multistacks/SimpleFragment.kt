@@ -25,8 +25,6 @@ class SimpleFragment: Fragment(), IMultiStackFragment {
     private var tabName: String? = null
     private var depth: Int? = null
 
-    override fun getIdentifierInStack() = 0
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
         mainActivity = context as? IMainActivity
