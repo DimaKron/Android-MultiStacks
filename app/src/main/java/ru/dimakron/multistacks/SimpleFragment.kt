@@ -18,13 +18,19 @@ class SimpleFragment: Fragment() {
         }
     }
 
+    private lateinit var tabName: String
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         inflater.inflate(R.layout.fragment_simple, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        tabNameTextView.text = getString(R.string.simple_text_tab_name, arguments?.getString(Constants.Extras.TAB_NAME))
+        val tabName = arguments?.getString(Constants.Extras.TAB_NAME)
+
+        activity?.title = tabName
+
+        tabNameTextView.text = getString(R.string.simple_text_tab_name, tabName)
         depthTextView.text = getString(R.string.simple_text_depth, arguments?.getInt(Constants.Extras.DEPTH))
 
         addFragmentButton.setOnClickListener { /* TODO */ }

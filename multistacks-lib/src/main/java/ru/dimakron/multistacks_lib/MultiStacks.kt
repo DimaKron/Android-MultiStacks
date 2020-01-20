@@ -5,40 +5,38 @@ import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
-import org.json.JSONArray
 
 class MultiStacks private constructor(builder: Builder) {
 
-    private val mContainerId = builder.containerId
-    private val mFragmentManager = builder.fragmentManager
+    private val containerId = builder.containerId
+    private val fragmentManager = builder.fragmentManager
+    private val transactionListener = builder.transactionListener
+    private val defaultTransactionOptions = builder.transactionOptions
 
-    private val mFragmentStacks = mutableListOf<MutableList<Fragment>>()
-    private val mTransactionListener = builder.transactionListener
-    private val mDefaultTransactionOptions = builder.transactionOptions
-    private var mSelectedTabIndex = builder.selectedTabIndex
-
-    private var mCurrentFrag: Fragment? = null
-    private var mTagCount = 0
-    private var mExecutingTransaction = false
+    private val fragmentStacks = mutableListOf<MutableList<Fragment>>()
+    private var selectedTabIndex = builder.selectedTabIndex
+    private var isTransactionExecuting = false
+    private var mCurrentFragment: Fragment? = null // TODO Rename? Needed?
+    private var tagCounter = 0
 
     init {
         //if (!restoreFromBundle(builder.savedInstanceState, builder.mRootFragments)) { TODO Временно закомментированно
             for (initializer in builder.rootFragmentInitializers) {
                 val stack = mutableListOf<Fragment>()
                 stack.add(initializer())
-                mFragmentStacks.add(stack)
+                fragmentStacks.add(stack)
             }
             initialize(builder.selectedTabIndex)
         //}
     }
 
     fun switchTab(index: Int, transactionOptions: FragNavTransactionOptions? = null){
-        require(index < mFragmentStacks.size) { "Can't switch to a tab that hasn't been initialized, Index: $index, current stack size: ${mFragmentStacks.size}. " +
+        require(index < fragmentStacks.size) { "Can't switch to a tab that hasn't been initialized, Index: $index, current stack size: ${fragmentStacks.size}. " +
                 "Make sure to create all of the tabs you need in the Constructor or provide a way for them to be created via RootFragmentListener." }
 
-        if (mSelectedTabIndex == index) return
+        if (selectedTabIndex == index) return
 
-        mSelectedTabIndex = index
+        selectedTabIndex = index
 
         val transaction = createTransactionWithOptions(transactionOptions)
 
@@ -48,21 +46,21 @@ class MultiStacks private constructor(builder: Builder) {
         if (fragment != null) {
             transaction.commit()
         } else {
-            fragment = getRootFragment(mSelectedTabIndex)
-            transaction.add(mContainerId, fragment, generateTag(fragment))
+            fragment = getRootFragment(selectedTabIndex)
+            transaction.add(containerId, fragment, generateTag(fragment))
             transaction.commit()
         }
 
         executePendingTransactions()
 
-        mCurrentFrag = fragment
-        mTransactionListener?.onTabTransaction(mCurrentFrag, mSelectedTabIndex)
+        mCurrentFragment = fragment
+        transactionListener?.onTabTransaction(mCurrentFragment, selectedTabIndex)
     }
 
     fun pushFragment(fragment: Fragment?, transactionOptions: FragNavTransactionOptions? = null) {
         if (fragment == null) return
 
-        val currentStack = mFragmentStacks[mSelectedTabIndex]
+        val currentStack = fragmentStacks[selectedTabIndex]
 
         val transaction = createTransactionWithOptions(transactionOptions)
 
@@ -76,22 +74,22 @@ class MultiStacks private constructor(builder: Builder) {
                     }
         }*/
 
-        transaction.add(mContainerId, fragment, generateTag(fragment))
+        transaction.add(containerId, fragment, generateTag(fragment))
         transaction.commit()
 
         executePendingTransactions()
 
         currentStack.add(fragment)
 
-        mCurrentFrag = fragment
-        mTransactionListener?.onFragmentTransaction(mCurrentFrag)
+        mCurrentFragment = fragment
+        transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
 
     fun popFragments(popDepth: Int, transactionOptions: FragNavTransactionOptions? = null) {
         check(!isRootFragment()) { "You can not popFragment the rootFragment. If you need to change this fragment, use replaceFragment(fragment)" }
         require(popDepth >= 1) { "popFragments parameter needs to be greater than 0" }
 
-        val currentStack = mFragmentStacks[mSelectedTabIndex]
+        val currentStack = fragmentStacks[selectedTabIndex]
 
         if (popDepth >= currentStack.size - 1) {
             clearStack(transactionOptions)
@@ -101,7 +99,7 @@ class MultiStacks private constructor(builder: Builder) {
         val transaction = createTransactionWithOptions(transactionOptions)
 
         for (i in 0 until popDepth) {
-            mFragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
+            fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
         }
 
         var bShouldPush = false
@@ -111,11 +109,11 @@ class MultiStacks private constructor(builder: Builder) {
         } else {
             if (currentStack.isNotEmpty()) {
                 fragment = currentStack[currentStack.size - 1]
-                transaction.add(mContainerId, fragment, fragment.tag)
+                transaction.add(containerId, fragment, fragment.tag)
                 transaction.commit()
             } else {
-                fragment = getRootFragment(mSelectedTabIndex)
-                transaction.add(mContainerId, fragment, generateTag(fragment))
+                fragment = getRootFragment(selectedTabIndex)
+                transaction.add(containerId, fragment, generateTag(fragment))
                 transaction.commit()
                 bShouldPush = true
             }
@@ -128,22 +126,22 @@ class MultiStacks private constructor(builder: Builder) {
             currentStack.add(fragment)
         }
 
-        mCurrentFrag = fragment
-        mTransactionListener?.onFragmentTransaction(mCurrentFrag)
+        mCurrentFragment = fragment
+        transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
 
     /*
     * Если rootFragment != null, то стек очищается вместе с корневым фрагментом и на его место помещается rootFragment
     * */
     fun clearStack(transactionOptions: FragNavTransactionOptions? = null, rootFragment: Fragment? = null) {
-        val currentStack = mFragmentStacks[mSelectedTabIndex]
+        val currentStack = fragmentStacks[selectedTabIndex]
 
         if (currentStack.size <= 1 && rootFragment == null || currentStack.size <= 0 && rootFragment != null) return
 
         val transaction = createTransactionWithOptions(transactionOptions)
 
         while (currentStack.size > 1 && rootFragment == null || currentStack.size > 0 && rootFragment != null) {
-            mFragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
+            fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
         }
 
         var bShouldPush = false
@@ -153,11 +151,11 @@ class MultiStacks private constructor(builder: Builder) {
         } else {
             if (currentStack.isNotEmpty()) {
                 fragment = currentStack[currentStack.size - 1]
-                transaction.add(mContainerId, fragment, fragment.tag)
+                transaction.add(containerId, fragment, fragment.tag)
                 transaction.commit()
             } else {
-                fragment = rootFragment?: getRootFragment(mSelectedTabIndex)
-                transaction.add(mContainerId, fragment, generateTag(fragment))
+                fragment = rootFragment?: getRootFragment(selectedTabIndex)
+                transaction.add(containerId, fragment, generateTag(fragment))
                 transaction.commit()
                 bShouldPush = true
             }
@@ -172,8 +170,8 @@ class MultiStacks private constructor(builder: Builder) {
             currentStack.add(fragment)
         }*/
 
-        mCurrentFrag = fragment
-        mTransactionListener?.onFragmentTransaction(mCurrentFrag)
+        mCurrentFragment = fragment
+        transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
 
     fun replaceFragment(fragment: Fragment, transactionOptions: FragNavTransactionOptions? = null) {
@@ -181,7 +179,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         val transaction = createTransactionWithOptions(transactionOptions)
 
-        val currentStack = mFragmentStacks[mSelectedTabIndex]
+        val currentStack = fragmentStacks[selectedTabIndex]
 
         if (currentStack.isNotEmpty()) {
             currentStack.removeAt(currentStack.size - 1)
@@ -196,39 +194,39 @@ class MultiStacks private constructor(builder: Builder) {
                     }
         }*/
 
-        transaction.replace(mContainerId, fragment, generateTag(fragment))
+        transaction.replace(containerId, fragment, generateTag(fragment))
         transaction.commit()
 
         executePendingTransactions()
 
         currentStack.add(fragment)
-        mCurrentFrag = fragment
-        mTransactionListener?.onFragmentTransaction(mCurrentFrag)
+        mCurrentFragment = fragment
+        transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
 
     private fun initialize(index: Int) {
-        mSelectedTabIndex = index
+        selectedTabIndex = index
 
-        require(mSelectedTabIndex <= mFragmentStacks.size) { "Starting index cannot be larger than the number of stacks" }
+        require(selectedTabIndex <= fragmentStacks.size) { "Starting index cannot be larger than the number of stacks" }
 
         clearFragmentManager()
 
         val transaction = createTransactionWithOptions()
 
         val fragment = getRootFragment(index)
-        transaction.add(mContainerId, fragment, generateTag(fragment))
+        transaction.add(containerId, fragment, generateTag(fragment))
         transaction.commit()
 
         executePendingTransactions()
 
-        mCurrentFrag = fragment
-        mTransactionListener?.onTabTransaction(mCurrentFrag, mSelectedTabIndex)
+        mCurrentFragment = fragment
+        transactionListener?.onTabTransaction(mCurrentFragment, selectedTabIndex)
     }
 
     private fun getRootFragment(index: Int): Fragment {
         var fragment: Fragment? = null
 
-        val stack = mFragmentStacks[index]
+        val stack = fragmentStacks[index]
         if (stack.isNotEmpty()) {
             fragment = stack[stack.size - 1]
         }
@@ -242,9 +240,9 @@ class MultiStacks private constructor(builder: Builder) {
     private fun reattachPreviousFragment(ft: FragmentTransaction): Fragment? {
         var fragment: Fragment? = null
 
-        val currentStack = mFragmentStacks[mSelectedTabIndex]
+        val currentStack = fragmentStacks[selectedTabIndex]
         if (currentStack.isNotEmpty()) {
-            fragment = mFragmentManager.findFragmentByTag(currentStack[currentStack.size - 1].tag)
+            fragment = fragmentManager.findFragmentByTag(currentStack[currentStack.size - 1].tag)
             fragment?.let { ft.attach(it) }
         }
 
@@ -252,40 +250,40 @@ class MultiStacks private constructor(builder: Builder) {
     }
 
     fun getCurrentFrag(): Fragment? {
-        if (mCurrentFrag != null) {
-            return mCurrentFrag
+        if (mCurrentFragment != null) {
+            return mCurrentFragment
         } else {
-            val currentStack = mFragmentStacks[mSelectedTabIndex]
+            val currentStack = fragmentStacks[selectedTabIndex]
             if (currentStack.isNotEmpty()) {
-                mCurrentFrag = mFragmentManager.findFragmentByTag(currentStack[currentStack.size - 1].tag)
+                mCurrentFragment = fragmentManager.findFragmentByTag(currentStack[currentStack.size - 1].tag)
             }
         }
-        return mCurrentFrag
+        return mCurrentFragment
     }
 
-    private fun generateTag(fragment: Fragment)= fragment::class.java.name + (++mTagCount)
+    private fun generateTag(fragment: Fragment)= fragment::class.java.name + (++tagCounter)
 
     private fun executePendingTransactions() {
-        if (!mExecutingTransaction) {
-            mExecutingTransaction = true
-            mFragmentManager.executePendingTransactions()
-            mExecutingTransaction = false
+        if (!isTransactionExecuting) {
+            isTransactionExecuting = true
+            fragmentManager.executePendingTransactions()
+            isTransactionExecuting = false
         }
     }
 
     private fun clearFragmentManager() {
         val transaction = createTransactionWithOptions()
 
-        mFragmentManager.fragments.forEach { transaction.remove(it) }
+        fragmentManager.fragments.forEach { transaction.remove(it) }
 
         transaction.commit()
         executePendingTransactions()
     }
 
     private fun createTransactionWithOptions(options: FragNavTransactionOptions? = null): FragmentTransaction {
-        val transaction = mFragmentManager.beginTransaction()
+        val transaction = fragmentManager.beginTransaction()
 
-        val transactionOptions = options?: mDefaultTransactionOptions
+        val transactionOptions = options?: defaultTransactionOptions
 
         if (transactionOptions != null) {
             transaction.setCustomAnimations(transactionOptions.enterAnimation, transactionOptions.exitAnimation, transactionOptions.popEnterAnimation, transactionOptions.popExitAnimation)
@@ -301,9 +299,9 @@ class MultiStacks private constructor(builder: Builder) {
         return transaction
     }
 
-    fun getCurrentStackIndex() = mSelectedTabIndex
+    fun getCurrentStackIndex() = selectedTabIndex
 
-    fun isRootFragment() = mFragmentStacks[mSelectedTabIndex].size == 1
+    fun isRootFragment() = fragmentStacks[selectedTabIndex].size == 1
 
     /*fun onSaveInstanceState(outState: Bundle) { TODO Временно закомментированно
         outState.putInt(Constants.Extras.FragNavController.TAG_COUNT, mTagCount)
