@@ -11,6 +11,7 @@ class MultiStacks private constructor(builder: Builder) {
 
     private val containerId = builder.containerId
     private val fragmentManager = builder.fragmentManager
+    private val rootFragmentInitializers = builder.rootFragmentInitializers
     private val transactionListener = builder.transactionListener
 
     private val fragmentStacks = mutableListOf<MutableList<Fragment>>()
@@ -20,14 +21,14 @@ class MultiStacks private constructor(builder: Builder) {
     private var tagCounter = 0
 
     init {
-        if (!restoreInstanceState(builder.savedInstanceState, builder.rootFragmentInitializers)) {
-            builder.rootFragmentInitializers.forEach { fragmentStacks.add(mutableListOf(it())) }
+        if (!restoreInstanceState(builder.savedInstanceState)) {
+            rootFragmentInitializers.forEach { fragmentStacks.add(mutableListOf(it())) }
 
             val transaction = fragmentManager.beginTransaction()
 
             fragmentManager.fragments.forEach { transaction.remove(it) }
 
-            val fragment = getRootFragment(selectedTabIndex)
+            val fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?: rootFragmentInitializers[selectedTabIndex].invoke()
             transaction.add(containerId, fragment, fragment.generateTag())
             transaction.commit()
 
@@ -51,7 +52,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         var fragment = reattachPreviousFragment(transaction)
         if (fragment == null) {
-            fragment = getRootFragment(selectedTabIndex)
+            fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?: rootFragmentInitializers[selectedTabIndex].invoke()
             transaction.add(containerId, fragment, fragment.generateTag())
         }
         transaction.commit()
@@ -107,7 +108,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         var fragment = reattachPreviousFragment(transaction)
         if (fragment == null) {
-            fragment = currentStack.last()
+            fragment = currentStack.lastOrNull()?: rootFragmentInitializers[selectedTabIndex].invoke()
             transaction.add(containerId, fragment, fragment.tag)
         }
         transaction.commit()
@@ -131,7 +132,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         var fragment = reattachPreviousFragment(transaction)
         if (fragment == null) {
-            fragment = currentStack.last()
+            fragment = currentStack.lastOrNull()?: rootFragmentInitializers[selectedTabIndex].invoke()
             transaction.add(containerId, fragment, fragment.tag)
         }
         transaction.commit()
@@ -180,9 +181,6 @@ class MultiStacks private constructor(builder: Builder) {
 
     fun isRootFragment() = fragmentStacks[selectedTabIndex].size == 1
 
-    private fun getRootFragment(index: Int) =
-        fragmentStacks.getOrNull(index)?.lastOrNull()?: throw IllegalStateException("No root fragment for index = $index")
-
     private fun reattachPreviousFragment(transaction: FragmentTransaction): Fragment? {
         val fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
         fragment?.let { transaction.attach(it) }
@@ -217,7 +215,7 @@ class MultiStacks private constructor(builder: Builder) {
         outState.putInt(Constants.Extras.SELECTED_TAB_INDEX, selectedTabIndex)
     }
 
-    private fun restoreInstanceState(savedInstanceState: Bundle?, fragmentInitializers: List<() -> Fragment>): Boolean {
+    private fun restoreInstanceState(savedInstanceState: Bundle?): Boolean {
         if (savedInstanceState == null) return false
 
         tagCounter = savedInstanceState.getInt(Constants.Extras.TAG_COUNTER)
@@ -231,7 +229,7 @@ class MultiStacks private constructor(builder: Builder) {
                 val stack = mutableListOf<Fragment>()
                 if (stackArray.length() == 1) {
                     val fragment = stackArray.getString(0)?.takeUnless { it.equals("null", true) }
-                        ?.let { fragmentManager.findFragmentByTag(it) }?: fragmentInitializers.getOrNull(x)?.invoke()
+                        ?.let { fragmentManager.findFragmentByTag(it) }?: rootFragmentInitializers.getOrNull(x)?.invoke()
                     fragment?.let { stack.add(it) }
                 } else {
                     for (y in 0 until stackArray.length()) {
