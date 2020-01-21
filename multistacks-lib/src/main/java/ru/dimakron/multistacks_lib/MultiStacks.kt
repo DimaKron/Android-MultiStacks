@@ -11,7 +11,6 @@ class MultiStacks private constructor(builder: Builder) {
     private val containerId = builder.containerId
     private val fragmentManager = builder.fragmentManager
     private val transactionListener = builder.transactionListener
-    private val transactionOptions = builder.transactionOptions
 
     private val fragmentStacks = mutableListOf<MutableList<Fragment>>()
     private var selectedTabIndex = builder.selectedTabIndex
@@ -23,7 +22,7 @@ class MultiStacks private constructor(builder: Builder) {
         //if (!restoreFromBundle(builder.savedInstanceState, builder.mRootFragments)) { TODO Временно закомментированно
         builder.rootFragmentInitializers.forEach { fragmentStacks.add(mutableListOf(it())) }
 
-        val transaction = createTransaction()
+        val transaction = fragmentManager.beginTransaction()
 
         fragmentManager.fragments.forEach { transaction.remove(it) }
 
@@ -45,7 +44,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         selectedTabIndex = index
 
-        val transaction = createTransaction()
+        val transaction = fragmentManager.beginTransaction()
 
         getCurrentFragment()?.let { transaction.detach(it) }
 
@@ -67,7 +66,7 @@ class MultiStacks private constructor(builder: Builder) {
     fun push(fragment: Fragment) {
         val currentStack = fragmentStacks[selectedTabIndex]
 
-        val transaction = createTransaction()
+        val transaction = fragmentManager.beginTransaction()
 
         getCurrentFragment()?.let { transaction.detach(it) }
 
@@ -99,7 +98,7 @@ class MultiStacks private constructor(builder: Builder) {
             return
         }
 
-        val transaction = createTransaction()
+        val transaction = fragmentManager.beginTransaction()
 
         for (i in 0 until depth) {
             fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
@@ -124,7 +123,7 @@ class MultiStacks private constructor(builder: Builder) {
 
         if (currentStack.size <= 1 && rootFragment == null || currentStack.size <= 0 && rootFragment != null) return
 
-        val transaction = createTransaction()
+        val transaction = fragmentManager.beginTransaction()
 
         while (currentStack.size > 1 && rootFragment == null || currentStack.size > 0 && rootFragment != null) {
             fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
@@ -155,7 +154,7 @@ class MultiStacks private constructor(builder: Builder) {
     fun replace(fragment: Fragment) {
         if(getCurrentFragment() == null) return
 
-        val transaction = createTransaction()
+        val transaction = fragmentManager.beginTransaction()
 
         val currentStack = fragmentStacks[selectedTabIndex]
 
@@ -197,23 +196,6 @@ class MultiStacks private constructor(builder: Builder) {
         val fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
         fragment?.let { transaction.attach(it) }
         return fragment
-    }
-
-    private fun createTransaction(): FragmentTransaction {
-        val transaction = fragmentManager.beginTransaction()
-
-        if (transactionOptions != null) {
-            transaction.setCustomAnimations(transactionOptions.enterAnimation, transactionOptions.exitAnimation, transactionOptions.popEnterAnimation, transactionOptions.popExitAnimation)
-            transaction.setTransitionStyle(transactionOptions.transitionStyle)
-
-            transaction.setTransition(transactionOptions.transition)
-
-            transactionOptions.sharedElements?.filter { it.first != null && it.second != null }?.forEach { transaction.addSharedElement(it.first!!, it.second!!) }
-            transactionOptions.breadCrumbTitle?.let { transaction.setBreadCrumbTitle(it) }
-            transactionOptions.breadCrumbShortTitle?.let { transaction.setBreadCrumbShortTitle(it) }
-        }
-
-        return transaction
     }
 
     private fun executePendingTransactions() {
@@ -293,7 +275,6 @@ class MultiStacks private constructor(builder: Builder) {
         var savedInstanceState: Bundle? = null
         val rootFragmentInitializers = mutableListOf<() -> Fragment>()
         var selectedTabIndex = 0
-        var transactionOptions: TransactionOptions? = null
         var transactionListener: TransactionListener? = null
 
         fun setState(state: Bundle?) = apply { savedInstanceState = state }
@@ -301,8 +282,6 @@ class MultiStacks private constructor(builder: Builder) {
         fun setRootFragmentInitializers(initializers: List<() -> Fragment>) = apply { rootFragmentInitializers.replaceWith(initializers) }
 
         fun setSelectedTabIndex(index: Int) = apply { selectedTabIndex = index }
-
-        fun setTransactionOptions(options: TransactionOptions?) = apply { transactionOptions = options }
 
         fun setTransactionListener(listener: TransactionListener) = apply { transactionListener = listener }
 
