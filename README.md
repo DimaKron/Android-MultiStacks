@@ -23,7 +23,7 @@ and line to modul level `build.gradle`
 
 ```groovy
 dependencies {
-    implementation 'com.github.DimaKron:Android-MultiStacks:1.0'
+    implementation 'com.github.DimaKron:Android-MultiStacks:1.1'
 }
 ```
 
