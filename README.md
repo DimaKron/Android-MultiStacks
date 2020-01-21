@@ -1,6 +1,6 @@
 Android MultiStacks      
 ===================  
-<img src="https://github.com/DimaKron/Android-MultiStacks/blob/master/sample.gif" width="50%">
+<img src="https://github.com/DimaKron/Android-MultiStacks/blob/master/sample.gif" width="30%">
 
 ## Getting started
 
