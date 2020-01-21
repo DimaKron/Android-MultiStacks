@@ -5,6 +5,7 @@ import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
+import org.json.JSONArray
 
 class MultiStacks private constructor(builder: Builder) {
 
@@ -19,22 +20,22 @@ class MultiStacks private constructor(builder: Builder) {
     private var tagCounter = 0
 
     init {
-        //if (!restoreFromBundle(builder.savedInstanceState, builder.mRootFragments)) { TODO Временно закомментированно
-        builder.rootFragmentInitializers.forEach { fragmentStacks.add(mutableListOf(it())) }
+        if (!restoreInstanceState(builder.savedInstanceState, builder.rootFragmentInitializers)) {
+            builder.rootFragmentInitializers.forEach { fragmentStacks.add(mutableListOf(it())) }
 
-        val transaction = fragmentManager.beginTransaction()
+            val transaction = fragmentManager.beginTransaction()
 
-        fragmentManager.fragments.forEach { transaction.remove(it) }
+            fragmentManager.fragments.forEach { transaction.remove(it) }
 
-        val fragment = getRootFragment(selectedTabIndex)
-        transaction.add(containerId, fragment, fragment.generateTag())
-        transaction.commit()
+            val fragment = getRootFragment(selectedTabIndex)
+            transaction.add(containerId, fragment, fragment.generateTag())
+            transaction.commit()
 
-        executePendingTransactions()
+            executePendingTransactions()
 
-        mCurrentFragment = fragment
-        transactionListener?.onTabTransaction(mCurrentFragment, selectedTabIndex)
-        //}
+            mCurrentFragment = fragment
+            transactionListener?.onTabTransaction(mCurrentFragment, selectedTabIndex)
+        }
     }
 
     fun setSelectedTabIndex(index: Int){
@@ -198,61 +199,56 @@ class MultiStacks private constructor(builder: Builder) {
 
     private fun Fragment.generateTag()= this::class.java.name + (++tagCounter)
 
-    /*fun onSaveInstanceState(outState: Bundle) { TODO Временно закомментированно
-        outState.putInt(Constants.Extras.FragNavController.TAG_COUNT, mTagCount)
-        outState.putInt(Constants.Extras.FragNavController.SELECTED_TAB_INDEX, mSelectedTabIndex)
-        mCurrentFrag?.let { outState.putString(Constants.Extras.FragNavController.CURRENT_FRAGMENT, it.tag)  }
+    fun saveInstanceState(outState: Bundle) {
+        outState.putInt(Constants.Extras.TAG_COUNTER, tagCounter)
+        outState.putString(Constants.Extras.CURRENT_FRAGMENT_TAG, mCurrentFragment?.tag)
 
         try {
             val stackArrays = JSONArray()
-            mFragmentStacks.forEach { stack ->
+            fragmentStacks.forEach { stack ->
                 val stackArray = JSONArray()
                 stack.forEach { stackArray.put(it.tag) }
                 stackArrays.put(stackArray)
             }
-            outState.putString(Constants.Extras.FragNavController.FRAGMENT_STACK, stackArrays.toString())
+            outState.putString(Constants.Extras.FRAGMENT_STACKS, stackArrays.toString())
         } catch (t: Throwable) {
-            // Nothing we can do
         }
+
+        outState.putInt(Constants.Extras.SELECTED_TAB_INDEX, selectedTabIndex)
     }
 
-    private fun restoreFromBundle(savedInstanceState: Bundle?, rootFragments: List<Fragment>?): Boolean {
+    private fun restoreInstanceState(savedInstanceState: Bundle?, fragmentInitializers: List<() -> Fragment>): Boolean {
         if (savedInstanceState == null) return false
 
-        mTagCount = savedInstanceState.getInt(Constants.Extras.FragNavController.TAG_COUNT, 0)
-        mCurrentFrag = mFragmentManager.findFragmentByTag(savedInstanceState.getString(Constants.Extras.FragNavController.CURRENT_FRAGMENT))
+        tagCounter = savedInstanceState.getInt(Constants.Extras.TAG_COUNTER)
+        mCurrentFragment = fragmentManager.findFragmentByTag(savedInstanceState.getString(Constants.Extras.CURRENT_FRAGMENT_TAG))
 
         try {
-            val stackArrays = JSONArray(savedInstanceState.getString(Constants.Extras.FragNavController.FRAGMENT_STACK))
+            val stackArrays = JSONArray(savedInstanceState.getString(Constants.Extras.FRAGMENT_STACKS))
 
             for (x in 0 until stackArrays.length()) {
                 val stackArray = stackArrays.getJSONArray(x)
                 val stack = mutableListOf<Fragment>()
                 if (stackArray.length() == 1) {
-                    val tag = stackArray.getString(0)
-                    val fragment = if (tag == null || "null".equals(tag, true)) rootFragments?.getOrNull(x)?: getRootFragment(x) else mFragmentManager.findFragmentByTag(tag)
-                    fragment?.let { stack.add(it) } // Скорее всего вызывает баг. Удалить по возможности
+                    val fragment = stackArray.getString(0)?.takeUnless { it.equals("null", true) }
+                        ?.let { fragmentManager.findFragmentByTag(it) }?: fragmentInitializers.getOrNull(x)?.invoke()
+                    fragment?.let { stack.add(it) }
                 } else {
                     for (y in 0 until stackArray.length()) {
-                        val tag = stackArray.getString(y)
-                        if (tag != null && !"null".equals(tag, true)) {
-                            mFragmentManager.findFragmentByTag(tag)?.let { stack.add(it) }
-                        }
+                        val fragment = stackArray.getString(y)?.takeUnless { it.equals("null", true) }?.let { fragmentManager.findFragmentByTag(it) }
+                        fragment?.let { stack.add(it) }
                     }
                 }
-                mFragmentStacks.add(stack)
+                fragmentStacks.add(stack)
             }
-
-            val tabIndex = savedInstanceState.getInt(Constants.Extras.FragNavController.SELECTED_TAB_INDEX)
-            if (tabIndex in 0 until MAX_TABS){
-                switchTab(tabIndex)
-            }
-
-            return true
         } catch (t: Throwable) {
             return false
         }
-    } */
+
+        setSelectedTabIndex(savedInstanceState.getInt(Constants.Extras.SELECTED_TAB_INDEX))
+
+        return true
+    }
 
     interface TransactionListener {
         fun onTabTransaction(fragment: Fragment?, index: Int)

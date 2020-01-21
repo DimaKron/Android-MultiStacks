@@ -38,6 +38,11 @@ class MainActivity : AppCompatActivity(),
         bottomNavigationView.setOnNavigationItemSelectedListener(this::onNavigationItemSelected)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        multiStacks.saveInstanceState(outState)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onDestroy() {
         bottomNavigationView.setOnNavigationItemSelectedListener(null)
         super.onDestroy()
