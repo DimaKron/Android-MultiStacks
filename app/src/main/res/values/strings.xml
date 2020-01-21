@@ -17,6 +17,5 @@
     <string name="simple_text_tab_favourites">Tab: Favourites</string>
     <string name="simple_text_tab_profile">Tab: Profile</string>
     <string name="simple_text_depth">Depth: %d</string>
-
-    <string name="simple_text_new_home">NEW Home</string>
+    <string name="simple_text_saved_state">Saved state: %s</string>
 </resources>
