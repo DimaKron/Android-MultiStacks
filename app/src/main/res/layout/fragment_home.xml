@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:background="#ebf7ff"
     android:orientation="vertical"
     android:gravity="center"
     android:layout_width="match_parent"
@@ -9,9 +10,9 @@
     <TextView
         android:id="@+id/tabNameTextView"
         android:textSize="18sp"
+        android:text="@string/simple_text_tab_home"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        tools:text="Tab: Home"/>
+        android:layout_height="wrap_content" />
 
     <TextView
         android:id="@+id/depthTextView"
@@ -22,22 +23,15 @@
         tools:text="Depth: 0"/>
 
     <Button
-        android:id="@+id/addFragmentButton"
-        android:text="@string/simple_button_add_fragment"
+        android:id="@+id/addButton"
+        android:text="@string/simple_button_add"
         android:layout_marginTop="36dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <Button
-        android:id="@+id/switchToHomeButton"
-        android:text="@string/simple_button_switch_to_home"
-        android:layout_marginTop="12dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <Button
-        android:id="@+id/switchToNewHomeButton"
-        android:text="@string/simple_button_switch_to_new_home"
+        android:id="@+id/addProfileButton"
+        android:text="@string/simple_button_add_profile"
         android:layout_marginTop="12dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />

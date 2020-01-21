@@ -1,4 +1,4 @@
-package ru.dimakron.multistacks
+package ru.dimakron.multistacks.fragment
 
 import android.content.Context
 import android.os.Bundle
@@ -6,15 +6,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import kotlinx.android.synthetic.main.fragment_simple.*
+import kotlinx.android.synthetic.main.fragment_home.*
+import ru.dimakron.multistacks.Constants
+import ru.dimakron.multistacks.R
+import ru.dimakron.multistacks.activity.IMainActivity
 import ru.dimakron.multistacks_lib.IMultiStackFragment
 
-class SimpleFragment: Fragment(), IMultiStackFragment {
+class HomeFragment: Fragment(), IMultiStackFragment {
 
     companion object{
-        fun newInstance(tabName: String, depth: Int = 0) = SimpleFragment().apply {
+        fun newInstance(depth: Int = 0) = HomeFragment().apply {
             arguments = Bundle().apply {
-                putString(Constants.Extras.TAB_NAME, tabName)
                 putInt(Constants.Extras.DEPTH, depth)
             }
         }
@@ -22,7 +24,6 @@ class SimpleFragment: Fragment(), IMultiStackFragment {
 
     private var mainActivity: IMainActivity? = null
 
-    private var tabName: String? = null
     private var depth: Int? = null
 
     override fun onAttach(context: Context) {
@@ -32,24 +33,21 @@ class SimpleFragment: Fragment(), IMultiStackFragment {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        tabName = arguments?.getString(Constants.Extras.TAB_NAME)
         depth = arguments?.getInt(Constants.Extras.DEPTH)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
-        inflater.inflate(R.layout.fragment_simple, container, false)
+        inflater.inflate(R.layout.fragment_home, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        activity?.title = tabName
+        activity?.setTitle(R.string.main_item_home)
 
-        tabNameTextView.text = getString(R.string.simple_text_tab_name, tabName)
         depthTextView.text = getString(R.string.simple_text_depth, depth)
 
-        addFragmentButton.setOnClickListener { mainActivity?.pushFragment(newInstance(tabName.toString(), (depth?: 0) + 1)) }
-        switchToHomeButton.setOnClickListener { mainActivity?.switchToHome() }
-        switchToNewHomeButton.setOnClickListener { mainActivity?.switchToNewHome() }
+        addButton.setOnClickListener { mainActivity?.pushFragment(newInstance((depth ?: 0) + 1)) }
+        addProfileButton.setOnClickListener { mainActivity?.pushFragment(ProfileFragment.newInstance((depth ?: 0) + 1)) }
         replaceWithProfileButton.setOnClickListener { mainActivity?.replaceWithProfile() }
     }
 

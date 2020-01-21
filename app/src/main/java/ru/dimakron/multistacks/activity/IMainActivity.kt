@@ -1,4 +1,4 @@
-package ru.dimakron.multistacks
+package ru.dimakron.multistacks.activity
 
 import androidx.fragment.app.Fragment
 
@@ -8,8 +8,8 @@ interface IMainActivity {
 
     fun switchToHome()
 
-    fun switchToNewHome()
-
     fun replaceWithProfile()
+
+    fun clearStack()
 
 }

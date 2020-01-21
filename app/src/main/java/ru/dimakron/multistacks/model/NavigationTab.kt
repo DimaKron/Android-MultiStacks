@@ -1,4 +1,4 @@
-package ru.dimakron.multistacks
+package ru.dimakron.multistacks.model
 
 import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment

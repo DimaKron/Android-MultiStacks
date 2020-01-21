@@ -117,35 +117,25 @@ class MultiStacks private constructor(builder: Builder) {
         transactionListener?.onFragmentTransaction(mCurrentFragment)
     }
 
-    // Current root fragment replaces with rootFragment if rootFragment != null
-    fun clearStack(rootFragment: Fragment? = null) {
+    fun clearStack() {
         val currentStack = fragmentStacks[selectedTabIndex]
 
-        if (currentStack.size <= 1 && rootFragment == null || currentStack.size <= 0 && rootFragment != null) return
+        if (currentStack.size <= 1) return
 
         val transaction = fragmentManager.beginTransaction()
 
-        while (currentStack.size > 1 && rootFragment == null || currentStack.size > 0 && rootFragment != null) {
+        while (currentStack.size > 1) {
             fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
         }
 
-        var pushToStack = false
         var fragment = reattachPreviousFragment(transaction)
         if (fragment == null) {
-            if (currentStack.isNotEmpty()) {
-                fragment = currentStack[currentStack.size - 1]
-                transaction.add(containerId, fragment, fragment.tag)
-            } else {
-                fragment = rootFragment?: getRootFragment(selectedTabIndex)
-                transaction.add(containerId, fragment, fragment.generateTag())
-                pushToStack = true
-            }
+            fragment = currentStack.last()
+            transaction.add(containerId, fragment, fragment.tag)
         }
         transaction.commit()
 
         executePendingTransactions()
-
-        if (pushToStack && rootFragment != null) currentStack.add(fragment)
 
         mCurrentFragment = fragment
         transactionListener?.onFragmentTransaction(mCurrentFragment)

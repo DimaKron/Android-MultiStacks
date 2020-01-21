@@ -1,19 +1,26 @@
-package ru.dimakron.multistacks
+package ru.dimakron.multistacks.activity
 
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.activity_main.*
+import ru.dimakron.multistacks.R
+import ru.dimakron.multistacks.fragment.FavouritesFragment
+import ru.dimakron.multistacks.fragment.HomeFragment
+import ru.dimakron.multistacks.fragment.NewsFragment
+import ru.dimakron.multistacks.fragment.ProfileFragment
+import ru.dimakron.multistacks.model.NavigationTab
 import ru.dimakron.multistacks_lib.MultiStacks
 
-class MainActivity : AppCompatActivity(), IMainActivity {
+class MainActivity : AppCompatActivity(),
+    IMainActivity {
 
     private val tabs = listOf(
-        NavigationTab(R.id.item_home) { SimpleFragment.newInstance(getString(R.string.main_item_home)) },
-        NavigationTab(R.id.item_news) { SimpleFragment.newInstance(getString(R.string.main_item_news)) },
-        NavigationTab(R.id.item_favourite) { SimpleFragment.newInstance(getString(R.string.main_item_favourite)) },
-        NavigationTab(R.id.item_profile) { SimpleFragment.newInstance(getString(R.string.main_item_profile)) }
+        NavigationTab(R.id.item_home) { HomeFragment.newInstance() },
+        NavigationTab(R.id.item_news) { NewsFragment.newInstance() },
+        NavigationTab(R.id.item_favourites) { FavouritesFragment.newInstance() },
+        NavigationTab(R.id.item_profile) { ProfileFragment.newInstance() }
     )
 
     private lateinit var multiStacks: MultiStacks
@@ -64,19 +71,18 @@ class MainActivity : AppCompatActivity(), IMainActivity {
         bottomNavigationView.selectedItemId = R.id.item_home
     }
 
-    override fun switchToNewHome() {
-        bottomNavigationView.selectedItemId = R.id.item_home
-        multiStacks.clearStack(SimpleFragment.newInstance(getString(R.string.simple_text_new_home)))
+    override fun clearStack() {
+        multiStacks.clearStack()
     }
 
     override fun replaceWithProfile() {
-        multiStacks.replace(SimpleFragment.newInstance(getString(R.string.main_item_profile)))
+        multiStacks.replace(ProfileFragment.newInstance())
     }
 
     private fun onNavigationItemSelected(item: MenuItem): Boolean {
         val newPosition = tabs.indexOfFirst { it.tabId == item.itemId }
 
-        if (newPosition == multiStacks.getSelectedTabIndex()){
+        if (newPosition == multiStacks.getSelectedTabIndex()) {
             multiStacks.clearStack()
         } else {
             multiStacks.setSelectedTabIndex(newPosition)

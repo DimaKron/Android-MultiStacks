@@ -3,14 +3,20 @@
 
     <string name="main_item_home">Home</string>
     <string name="main_item_news">News</string>
-    <string name="main_item_favourite">Favourite</string>
+    <string name="main_item_favourites">Favourites</string>
     <string name="main_item_profile">Profile</string>
 
-    <string name="simple_button_add_fragment">Add fragment</string>
-    <string name="simple_button_switch_to_home">Switch to home</string>
-    <string name="simple_button_switch_to_new_home">Switch to new home</string>
+    <string name="simple_button_add">Add</string>
+    <string name="simple_button_add_profile">Add profile</string>
     <string name="simple_button_replace_with_profile">Replace with profile</string>
-    <string name="simple_text_tab_name">Tab: %s</string>
+    <string name="simple_button_switch_to_home">Switch to home</string>
+    <string name="simple_button_clear">Clear</string>
+
+    <string name="simple_text_tab_home">Tab: Home</string>
+    <string name="simple_text_tab_news">Tab: News</string>
+    <string name="simple_text_tab_favourites">Tab: Favourites</string>
+    <string name="simple_text_tab_profile">Tab: Profile</string>
     <string name="simple_text_depth">Depth: %d</string>
+
     <string name="simple_text_new_home">NEW Home</string>
 </resources>
