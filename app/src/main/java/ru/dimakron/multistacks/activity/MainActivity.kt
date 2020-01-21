@@ -11,10 +11,11 @@ import ru.dimakron.multistacks.fragment.HomeFragment
 import ru.dimakron.multistacks.fragment.NewsFragment
 import ru.dimakron.multistacks.fragment.ProfileFragment
 import ru.dimakron.multistacks.model.NavigationTab
+import ru.dimakron.multistacks_lib.BackResultType
 import ru.dimakron.multistacks_lib.MultiStacks
 
 class MainActivity : AppCompatActivity(),
-    IMainActivity {
+    IMainActivity, MultiStacks.TransactionListener {
 
     private val tabs = listOf(
         NavigationTab(R.id.item_home) { HomeFragment.newInstance() },
@@ -33,6 +34,8 @@ class MainActivity : AppCompatActivity(),
             .setState(savedInstanceState)
             .setRootFragmentInitializers(tabs.map { it.fragmentInitializer })
             .setSelectedTabIndex(0)
+            .setTabHistoryEnabled(true)
+            .setTransactionListener(this)
             .build()
 
         bottomNavigationView.setOnNavigationItemSelectedListener(this::onNavigationItemSelected)
@@ -49,23 +52,20 @@ class MainActivity : AppCompatActivity(),
     }
 
     override fun onBackPressed() {
-        if (multiStacks.isRootFragment()) {
-            /*val history = tabsHistory ?: return
-            when {
-                history.isEmpty() -> showExitDialog()
-                history.getSize() > 1 -> {
-                    history.pop()
-                    bottomMenu?.selectedItemId = navigationTabs[history.peek()!!].tabId
-                }
-                else -> {
-                    bottomMenu?.selectedItemId = navigationTabs[0].tabId
-                    history.clear()
-                }
-            }*/
+        val result = multiStacks.onBackPressed()
+        if (result.type == BackResultType.CANCELLED){
             super.onBackPressed()
         } else {
-            multiStacks.popFragments(1)
+            result.newIndex?.let { bottomNavigationView.selectedItemId = tabs[it].tabId }
         }
+    }
+
+    override fun onTabTransaction(fragment: Fragment?, index: Int) {
+        // ...
+    }
+
+    override fun onFragmentTransaction(fragment: Fragment?) {
+        // ...
     }
 
     override fun pushFragment(fragment: Fragment) {
@@ -91,9 +91,10 @@ class MainActivity : AppCompatActivity(),
             multiStacks.clearStack()
         } else {
             multiStacks.setSelectedTabIndex(newPosition)
-            //tabsHistory?.push(newPosition)
         }
 
         return true
     }
+
+
 }

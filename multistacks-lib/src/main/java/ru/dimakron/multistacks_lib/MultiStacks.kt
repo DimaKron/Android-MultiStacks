@@ -13,12 +13,14 @@ class MultiStacks private constructor(builder: Builder) {
     private val fragmentManager = builder.fragmentManager
     private val rootFragmentInitializers = builder.rootFragmentInitializers
     private val transactionListener = builder.transactionListener
+    private val isTabHistoryEnabled = builder.isTabHistoryEnabled
 
     private val fragmentStacks = mutableListOf<MutableList<Fragment>>()
     private var selectedTabIndex = builder.selectedTabIndex
     private var isTransactionExecuting = false
-    private var mCurrentFragment: Fragment? = null // TODO Rename?
+    private var currentFragment: Fragment? = null
     private var tagCounter = 0
+    private var tabsHistory = UniqueStack()
 
     init {
         if (!restoreInstanceState(builder.savedInstanceState)) {
@@ -34,8 +36,8 @@ class MultiStacks private constructor(builder: Builder) {
 
             executePendingTransactions()
 
-            mCurrentFragment = fragment
-            transactionListener?.onTabTransaction(mCurrentFragment, selectedTabIndex)
+            currentFragment = fragment
+            transactionListener?.onTabTransaction(currentFragment, selectedTabIndex)
         }
     }
 
@@ -59,8 +61,10 @@ class MultiStacks private constructor(builder: Builder) {
 
         executePendingTransactions()
 
-        mCurrentFragment = fragment
-        transactionListener?.onTabTransaction(mCurrentFragment, selectedTabIndex)
+        currentFragment = fragment
+        transactionListener?.onTabTransaction(currentFragment, selectedTabIndex)
+
+        tabsHistory.push(selectedTabIndex)
     }
 
     fun getSelectedTabIndex() = selectedTabIndex
@@ -86,8 +90,8 @@ class MultiStacks private constructor(builder: Builder) {
 
         currentStack.add(fragment)
 
-        mCurrentFragment = fragment
-        transactionListener?.onFragmentTransaction(mCurrentFragment)
+        currentFragment = fragment
+        transactionListener?.onFragmentTransaction(currentFragment)
     }
 
     fun popFragments(depth: Int) {
@@ -115,8 +119,8 @@ class MultiStacks private constructor(builder: Builder) {
 
         executePendingTransactions()
 
-        mCurrentFragment = fragment
-        transactionListener?.onFragmentTransaction(mCurrentFragment)
+        currentFragment = fragment
+        transactionListener?.onFragmentTransaction(currentFragment)
     }
 
     fun clearStack() {
@@ -139,8 +143,8 @@ class MultiStacks private constructor(builder: Builder) {
 
         executePendingTransactions()
 
-        mCurrentFragment = fragment
-        transactionListener?.onFragmentTransaction(mCurrentFragment)
+        currentFragment = fragment
+        transactionListener?.onFragmentTransaction(currentFragment)
     }
 
     fun replace(fragment: Fragment) {
@@ -168,18 +172,37 @@ class MultiStacks private constructor(builder: Builder) {
 
         currentStack.add(fragment)
 
-        mCurrentFragment = fragment
-        transactionListener?.onFragmentTransaction(mCurrentFragment)
+        currentFragment = fragment
+        transactionListener?.onFragmentTransaction(currentFragment)
     }
 
     fun getCurrentFragment(): Fragment? {
-        if (mCurrentFragment == null){
-            mCurrentFragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
+        if (currentFragment == null){
+            currentFragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
         }
-        return mCurrentFragment
+        return currentFragment
     }
 
     fun isRootFragment() = fragmentStacks[selectedTabIndex].size == 1
+
+    fun onBackPressed(): BackResult{
+        if (isRootFragment()) {
+            return when {
+                tabsHistory.isEmpty() || tabsHistory.getSize() == 1 && tabsHistory.peek() == 0 || !isTabHistoryEnabled  -> BackResult(BackResultType.CANCELLED)
+                tabsHistory.getSize() > 1 -> {
+                    tabsHistory.pop()
+                    BackResult(BackResultType.OK, tabsHistory.peek())
+                }
+                else -> {
+                    tabsHistory.clear()
+                    BackResult(BackResultType.OK, 0)
+                }
+            }
+        } else {
+            popFragments(1)
+            return BackResult(BackResultType.OK)
+        }
+    }
 
     private fun reattachPreviousFragment(transaction: FragmentTransaction): Fragment? {
         val fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
@@ -198,8 +221,9 @@ class MultiStacks private constructor(builder: Builder) {
     private fun Fragment.generateTag()= this::class.java.name + (++tagCounter)
 
     fun saveInstanceState(outState: Bundle) {
+        outState.putParcelable(Constants.Extras.TAB_HISTORY, tabsHistory)
         outState.putInt(Constants.Extras.TAG_COUNTER, tagCounter)
-        outState.putString(Constants.Extras.CURRENT_FRAGMENT_TAG, mCurrentFragment?.tag)
+        outState.putString(Constants.Extras.CURRENT_FRAGMENT_TAG, currentFragment?.tag)
 
         try {
             val stackArrays = JSONArray()
@@ -218,8 +242,9 @@ class MultiStacks private constructor(builder: Builder) {
     private fun restoreInstanceState(savedInstanceState: Bundle?): Boolean {
         if (savedInstanceState == null) return false
 
+        tabsHistory = savedInstanceState.getParcelable(Constants.Extras.TAB_HISTORY)?: UniqueStack()
         tagCounter = savedInstanceState.getInt(Constants.Extras.TAG_COUNTER)
-        mCurrentFragment = fragmentManager.findFragmentByTag(savedInstanceState.getString(Constants.Extras.CURRENT_FRAGMENT_TAG))
+        currentFragment = fragmentManager.findFragmentByTag(savedInstanceState.getString(Constants.Extras.CURRENT_FRAGMENT_TAG))
 
         try {
             val stackArrays = JSONArray(savedInstanceState.getString(Constants.Extras.FRAGMENT_STACKS))
@@ -260,6 +285,7 @@ class MultiStacks private constructor(builder: Builder) {
         val rootFragmentInitializers = mutableListOf<() -> Fragment>()
         var selectedTabIndex = 0
         var transactionListener: TransactionListener? = null
+        var isTabHistoryEnabled = false
 
         fun setState(state: Bundle?) = apply { savedInstanceState = state }
 
@@ -268,6 +294,8 @@ class MultiStacks private constructor(builder: Builder) {
         fun setSelectedTabIndex(index: Int) = apply { selectedTabIndex = index }
 
         fun setTransactionListener(listener: TransactionListener) = apply { transactionListener = listener }
+
+        fun setTabHistoryEnabled(isEnabled: Boolean) = apply { isTabHistoryEnabled = isEnabled }
 
         fun build() = MultiStacks(this)
     }

@@ -7,6 +7,7 @@ object Constants {
         const val CURRENT_FRAGMENT_TAG = "multi_stack_current_fragment_tag"
         const val SELECTED_TAB_INDEX = "multi_stack_selected_tab_index"
         const val FRAGMENT_STACKS = "multi_stack_fragment_stacks"
+        const val TAB_HISTORY = "multi_stack_tab_history"
     }
 
 }
