@@ -2,8 +2,6 @@ Android MultiStacks
 ===================  
 <img src="https://github.com/DimaKron/Android-MultiStacks/blob/master/sample.gif" width="50%">
 
-implementation 'com.github.DimaKron:Android-MultiStacks:1.0'
-
 ## Getting started
 
 ### Dependency
