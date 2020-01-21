@@ -46,7 +46,7 @@ class NewsFragment: Fragment(), IMultiStackFragment {
 
         depthTextView.text = getString(R.string.simple_text_depth, depth)
 
-        savedStateTextView.text = getString(R.string.simple_text_saved_state, savedInstanceState)
+        savedStateTextView.text = getString(R.string.simple_text_saved_state, savedInstanceState?.hashCode().toString())
 
         addButton.setOnClickListener { mainActivity?.pushFragment(newInstance((depth ?: 0) + 1)) }
         switchToHomeButton.setOnClickListener { mainActivity?.switchToHome() }
