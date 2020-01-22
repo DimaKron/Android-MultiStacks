@@ -72,7 +72,6 @@ Use methods following methods for navigation managent
 - `replace(Fragment)` replace current with new fragment
 - `popFragments(Int)` remove X last fragments of current stack
 - `clearStack()` remove all fragments of current stack (except first)
-- `clearStack()` remove all fragments of current stack (except first)
 
 ### Other features
 
