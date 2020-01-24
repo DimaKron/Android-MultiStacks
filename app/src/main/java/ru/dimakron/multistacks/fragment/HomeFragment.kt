@@ -52,5 +52,4 @@ class HomeFragment: Fragment(), IMultiStackFragment {
         addProfileButton.setOnClickListener { mainActivity?.pushFragment(ProfileFragment.newInstance((depth ?: 0) + 1)) }
         replaceWithProfileButton.setOnClickListener { mainActivity?.replaceWithProfile() }
     }
-
 }

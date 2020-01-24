@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import org.json.JSONArray
+import kotlin.math.min
 
 class MultiStacks private constructor(builder: Builder) {
 
@@ -16,29 +17,51 @@ class MultiStacks private constructor(builder: Builder) {
     private val isTabHistoryEnabled = builder.isTabHistoryEnabled
 
     private val fragmentStacks = mutableListOf<MutableList<Fragment>>()
-    private var selectedTabIndex = builder.selectedTabIndex
+    private val fragmentStates = mutableMapOf<Pair<Int, Int>, Fragment.SavedState?>()
+    private var selectedTabIndex = -1
     private var isTransactionExecuting = false
-    private var currentFragment: Fragment? = null
-    private var tagCounter = 0
     private var tabsHistory = UniqueStack()
 
     init {
         if (!restoreInstanceState(builder.savedInstanceState)) {
-            rootFragmentInitializers.forEach { fragmentStacks.add(mutableListOf(it())) }
-
-            val transaction = fragmentManager.beginTransaction()
-
-            fragmentManager.fragments.forEach { transaction.remove(it) }
-
-            val fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?: rootFragmentInitializers[selectedTabIndex].invoke()
-            transaction.add(containerId, fragment, fragment.generateTag())
-            transaction.commit()
-
-            executePendingTransactions()
-
-            currentFragment = fragment
-            transactionListener?.onTabTransaction(currentFragment, selectedTabIndex)
+            repeat(rootFragmentInitializers.size) { fragmentStacks.add(mutableListOf()) }
+            setSelectedTabIndex(builder.selectedTabIndex)
         }
+    }
+
+    private fun detachFragment(transaction: FragmentTransaction){
+        val oldStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
+        val oldFragment = oldStack.lastOrNull()
+        if(oldFragment != null){
+            fragmentStates[Pair(selectedTabIndex, oldStack.lastIndex)] = fragmentManager.saveFragmentInstanceState(oldFragment)
+            transaction.remove(oldFragment)
+        }
+    }
+
+    private fun removeFragment(transaction: FragmentTransaction){
+        val currentStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
+        val fragmentToRemove = currentStack.lastOrNull()
+        if(fragmentToRemove != null){
+            fragmentStates[Pair(selectedTabIndex, currentStack.lastIndex)] = null
+            currentStack.remove(fragmentToRemove)
+            transaction.remove(fragmentToRemove)
+        }
+    }
+
+    private fun attachFragment(transaction: FragmentTransaction){
+        val newStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
+        var newFragment = newStack.lastOrNull()
+        if (newFragment == null){
+            newFragment = rootFragmentInitializers[selectedTabIndex].invoke()
+            newStack.add(newFragment)
+        }
+        attachFragment(transaction, newFragment)
+    }
+
+    private fun attachFragment(transaction: FragmentTransaction, fragment: Fragment){
+        val newStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
+        fragment.setInitialSavedState(fragmentStates[Pair(selectedTabIndex, newStack.lastIndex)])
+        transaction.add(containerId, fragment)
     }
 
     fun setSelectedTabIndex(index: Int){
@@ -46,24 +69,19 @@ class MultiStacks private constructor(builder: Builder) {
 
         if (selectedTabIndex == index) return
 
-        selectedTabIndex = index
-
         val transaction = fragmentManager.beginTransaction()
 
-        getCurrentFragment()?.let { transaction.detach(it) }
+        detachFragment(transaction)
 
-        var fragment = reattachPreviousFragment(transaction)
-        if (fragment == null) {
-            fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?: rootFragmentInitializers[selectedTabIndex].invoke()
-            transaction.add(containerId, fragment, fragment.generateTag())
-        }
+        selectedTabIndex = index
+
+        attachFragment(transaction)
+
         transaction.commit()
 
         executePendingTransactions()
 
-        currentFragment = fragment
-        transactionListener?.onTabTransaction(currentFragment, selectedTabIndex)
-
+        transactionListener?.onTabTransaction(fragmentStacks[selectedTabIndex].lastOrNull(), selectedTabIndex)
         tabsHistory.push(selectedTabIndex)
     }
 
@@ -74,113 +92,70 @@ class MultiStacks private constructor(builder: Builder) {
 
         val transaction = fragmentManager.beginTransaction()
 
-        getCurrentFragment()?.let { transaction.detach(it) }
+        detachFragment(transaction)
 
-        if ((fragment as? IMultiStackFragment)?.getIdentifierInStack() != null)
+        /*if ((fragment as? IMultiStackFragment)?.getIdentifierInStack() != null) TODO
             currentStack.filter { (it as? IMultiStackFragment)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
                 .forEach { f ->
                     currentStack.remove(f)
                     fragmentManager.findFragmentByTag(f.tag)?.let { transaction.remove(it) }
-                }
+                }*/
 
-        transaction.add(containerId, fragment, fragment.generateTag())
+        currentStack.add(fragment)
+        attachFragment(transaction, fragment)
+
         transaction.commit()
 
         executePendingTransactions()
 
-        currentStack.add(fragment)
-
-        currentFragment = fragment
-        transactionListener?.onFragmentTransaction(currentFragment)
+        transactionListener?.onFragmentTransaction(currentStack.lastOrNull())
     }
 
     fun popFragments(depth: Int) {
-        require(depth >= 1) { "Pop depth should be greater than 0" }
+        require(depth > 0) { "Pop depth should be greater than 0" }
 
         val currentStack = fragmentStacks[selectedTabIndex]
 
-        if (depth >= currentStack.size - 1) {
-            clearStack()
-            return
-        }
-
         val transaction = fragmentManager.beginTransaction()
 
-        for (i in 0 until depth) {
-            fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
-        }
+        val removesCount = min(depth, currentStack.size - 1)
+        for (i in 0 until removesCount) removeFragment(transaction)
 
-        var fragment = reattachPreviousFragment(transaction)
-        if (fragment == null) {
-            fragment = currentStack.lastOrNull()?: rootFragmentInitializers[selectedTabIndex].invoke()
-            transaction.add(containerId, fragment, fragment.tag)
-        }
+        if (removesCount > 0) attachFragment(transaction)
+
         transaction.commit()
 
         executePendingTransactions()
 
-        currentFragment = fragment
-        transactionListener?.onFragmentTransaction(currentFragment)
+        transactionListener?.onFragmentTransaction(currentStack.lastOrNull())
     }
 
     fun clearStack() {
-        val currentStack = fragmentStacks[selectedTabIndex]
-
-        if (currentStack.size <= 1) return
-
-        val transaction = fragmentManager.beginTransaction()
-
-        while (currentStack.size > 1) {
-            fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
-        }
-
-        var fragment = reattachPreviousFragment(transaction)
-        if (fragment == null) {
-            fragment = currentStack.lastOrNull()?: rootFragmentInitializers[selectedTabIndex].invoke()
-            transaction.add(containerId, fragment, fragment.tag)
-        }
-        transaction.commit()
-
-        executePendingTransactions()
-
-        currentFragment = fragment
-        transactionListener?.onFragmentTransaction(currentFragment)
+        fragmentStacks[selectedTabIndex].size.takeIf { it > 0 }?.let { popFragments(it) }
     }
 
     fun replace(fragment: Fragment) {
-        if(getCurrentFragment() == null) return
+        val currentStack = fragmentStacks[selectedTabIndex]
 
         val transaction = fragmentManager.beginTransaction()
 
-        val currentStack = fragmentStacks[selectedTabIndex]
+        removeFragment(transaction)
 
-        if (currentStack.isNotEmpty()) {
-            currentStack.removeAt(currentStack.size - 1)
-        }
-
-        if ((fragment as? IMultiStackFragment)?.getIdentifierInStack() != null)
+        /*if ((fragment as? IMultiStackFragment)?.getIdentifierInStack() != null) TODO
             currentStack.filter { (it as? IMultiStackFragment)?.getIdentifierInStack() == fragment.getIdentifierInStack() }
                     .forEach { f ->
                         currentStack.remove(f)
                         fragmentManager.findFragmentByTag(f.tag)?.let { transaction.remove(it) }
-                    }
+                    }*/
 
-        transaction.replace(containerId, fragment, fragment.generateTag())
+        currentStack.add(fragment)
+        attachFragment(transaction, fragment)
+
         transaction.commit()
 
         executePendingTransactions()
 
-        currentStack.add(fragment)
-
-        currentFragment = fragment
-        transactionListener?.onFragmentTransaction(currentFragment)
-    }
-
-    fun getCurrentFragment(): Fragment? {
-        if (currentFragment == null){
-            currentFragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
-        }
-        return currentFragment
+        transactionListener?.onFragmentTransaction(currentStack.lastOrNull())
     }
 
     fun isRootFragment() = fragmentStacks[selectedTabIndex].size == 1
@@ -204,12 +179,6 @@ class MultiStacks private constructor(builder: Builder) {
         }
     }
 
-    private fun reattachPreviousFragment(transaction: FragmentTransaction): Fragment? {
-        val fragment = fragmentStacks.getOrNull(selectedTabIndex)?.lastOrNull()?.let { fragmentManager.findFragmentByTag(it.tag) }
-        fragment?.let { transaction.attach(it) }
-        return fragment
-    }
-
     private fun executePendingTransactions() {
         if (!isTransactionExecuting) {
             isTransactionExecuting = true
@@ -218,12 +187,8 @@ class MultiStacks private constructor(builder: Builder) {
         }
     }
 
-    private fun Fragment.generateTag()= this::class.java.name + (++tagCounter)
-
     fun saveInstanceState(outState: Bundle) {
         outState.putParcelable(Constants.Extras.TAB_HISTORY, tabsHistory)
-        outState.putInt(Constants.Extras.TAG_COUNTER, tagCounter)
-        outState.putString(Constants.Extras.CURRENT_FRAGMENT_TAG, currentFragment?.tag)
 
         try {
             val stackArrays = JSONArray()
@@ -243,8 +208,6 @@ class MultiStacks private constructor(builder: Builder) {
         if (savedInstanceState == null) return false
 
         tabsHistory = savedInstanceState.getParcelable(Constants.Extras.TAB_HISTORY)?: UniqueStack()
-        tagCounter = savedInstanceState.getInt(Constants.Extras.TAG_COUNTER)
-        currentFragment = fragmentManager.findFragmentByTag(savedInstanceState.getString(Constants.Extras.CURRENT_FRAGMENT_TAG))
 
         try {
             val stackArrays = JSONArray(savedInstanceState.getString(Constants.Extras.FRAGMENT_STACKS))
