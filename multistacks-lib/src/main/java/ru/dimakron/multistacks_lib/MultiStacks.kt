@@ -29,41 +29,6 @@ class MultiStacks private constructor(builder: Builder) {
         }
     }
 
-    private fun detachFragment(transaction: FragmentTransaction){
-        val oldStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
-        val oldFragment = oldStack.lastOrNull()
-        if(oldFragment != null){
-            fragmentStates[Pair(selectedTabIndex, oldStack.lastIndex)] = fragmentManager.saveFragmentInstanceState(oldFragment)
-            transaction.remove(oldFragment)
-        }
-    }
-
-    private fun removeFragment(transaction: FragmentTransaction){
-        val currentStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
-        val fragmentToRemove = currentStack.lastOrNull()
-        if(fragmentToRemove != null){
-            fragmentStates[Pair(selectedTabIndex, currentStack.lastIndex)] = null
-            currentStack.remove(fragmentToRemove)
-            transaction.remove(fragmentToRemove)
-        }
-    }
-
-    private fun attachFragment(transaction: FragmentTransaction){
-        val newStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
-        var newFragment = newStack.lastOrNull()
-        if (newFragment == null){
-            newFragment = rootFragmentInitializers[selectedTabIndex].invoke()
-            newStack.add(newFragment)
-        }
-        attachFragment(transaction, newFragment)
-    }
-
-    private fun attachFragment(transaction: FragmentTransaction, fragment: Fragment){
-        val newStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
-        fragment.setInitialSavedState(fragmentStates[Pair(selectedTabIndex, newStack.lastIndex)])
-        transaction.add(containerId, fragment)
-    }
-
     fun setSelectedTabIndex(index: Int){
         require(index >= 0 && index < fragmentStacks.size) { "Tab index should be in range [0, ${fragmentStacks.size - 1} but is $index]" }
 
@@ -177,6 +142,41 @@ class MultiStacks private constructor(builder: Builder) {
             popFragments(1)
             return BackResult(BackResultType.OK)
         }
+    }
+
+    private fun detachFragment(transaction: FragmentTransaction){
+        val oldStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
+        val oldFragment = oldStack.lastOrNull()
+        if(oldFragment != null){
+            fragmentStates[Pair(selectedTabIndex, oldStack.lastIndex)] = fragmentManager.saveFragmentInstanceState(oldFragment)
+            transaction.remove(oldFragment)
+        }
+    }
+
+    private fun removeFragment(transaction: FragmentTransaction){
+        val currentStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
+        val fragmentToRemove = currentStack.lastOrNull()
+        if(fragmentToRemove != null){
+            fragmentStates[Pair(selectedTabIndex, currentStack.lastIndex)] = null
+            currentStack.remove(fragmentToRemove)
+            transaction.remove(fragmentToRemove)
+        }
+    }
+
+    private fun attachFragment(transaction: FragmentTransaction){
+        val newStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
+        var newFragment = newStack.lastOrNull()
+        if (newFragment == null){
+            newFragment = rootFragmentInitializers[selectedTabIndex].invoke()
+            newStack.add(newFragment)
+        }
+        attachFragment(transaction, newFragment)
+    }
+
+    private fun attachFragment(transaction: FragmentTransaction, fragment: Fragment){
+        val newStack = fragmentStacks.getOrNull(selectedTabIndex)?: return
+        fragment.setInitialSavedState(fragmentStates[Pair(selectedTabIndex, newStack.lastIndex)])
+        transaction.add(containerId, fragment)
     }
 
     private fun executePendingTransactions() {
