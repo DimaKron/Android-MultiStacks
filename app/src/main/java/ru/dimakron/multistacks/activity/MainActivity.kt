@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity(),
         setContentView(R.layout.activity_main)
 
         multiStacks = MultiStacks.Builder(supportFragmentManager, R.id.containerLayout)
-            .setState(savedInstanceState)
             .setRootFragmentInitializers(tabs.map { it.fragmentInitializer })
             .setSelectedTabIndex(0)
             .setTabHistoryEnabled(true)
@@ -39,11 +38,6 @@ class MainActivity : AppCompatActivity(),
             .build()
 
         bottomNavigationView.setOnNavigationItemSelectedListener(this::onNavigationItemSelected)
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        multiStacks.saveInstanceState(outState)
-        super.onSaveInstanceState(outState)
     }
 
     override fun onDestroy() {
