@@ -65,7 +65,7 @@ Call method to perform back action (close fragment or back to other tab)
 
 #### Manage
 
-Use methods following methods for navigation managent
+Use following methods for navigation managent
 
 - `setSelectedTabIndex(Int)` change tab
 - `push(Fragment)` add new fragment to current tab
