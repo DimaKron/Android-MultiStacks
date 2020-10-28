@@ -123,15 +123,20 @@ class MultiStacks private constructor(builder: Builder) {
         transactionListener?.onFragmentTransaction(currentFragment)
     }
 
-    fun clearStack() {
+    fun clearStack(to: Class<*>? = null) { // Возможно, в будущем можно заменить сравнение типов на сравнение идентификаторов в стеке
         val currentStack = fragmentStacks[selectedTabIndex]
 
-        if (currentStack.size <= 1) return
+        if (currentStack.size <= 1 || getCurrentFragment()?.let { it::class.java == to } == true) return
 
         val transaction = fragmentManager.beginTransaction()
 
-        while (currentStack.size > 1) {
-            fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
+        loop@while (currentStack.size > 1) {
+            val fragmentToDelete = fragmentManager.findFragmentByTag(currentStack.last().tag)
+
+            if(fragmentToDelete?.let { it::class.java == to } == true) break@loop
+
+            currentStack.removeLast()
+            fragmentToDelete?.let { transaction.remove(it) }
         }
 
         var fragment = reattachPreviousFragment(transaction)
