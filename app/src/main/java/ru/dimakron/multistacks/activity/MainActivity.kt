@@ -14,8 +14,7 @@ import ru.dimakron.multistacks.model.NavigationTab
 import ru.dimakron.multistacks_lib.BackResultType
 import ru.dimakron.multistacks_lib.MultiStacks
 
-class MainActivity : AppCompatActivity(),
-    IMainActivity, MultiStacks.TransactionListener {
+class MainActivity : AppCompatActivity(), IMainActivity, MultiStacks.TransactionListener {
 
     private val tabs = listOf(
         NavigationTab(R.id.item_home) { HomeFragment.newInstance() },
