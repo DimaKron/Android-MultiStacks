@@ -4,7 +4,7 @@ import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
 
 @Parcelize
-data class UniqueStack(private val elements: MutableList<Int> = mutableListOf()): Parcelable{
+internal data class UniqueStack(private val elements: MutableList<Int> = mutableListOf()): Parcelable{
 
     fun push(entry: Int) {
         elements.remove(entry)

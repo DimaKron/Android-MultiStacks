@@ -1,6 +1,6 @@
 package ru.dimakron.multistacks_lib
 
-object Constants {
+internal object Constants {
 
     object Extras{
         const val TAG_COUNTER = "multi_stack_tag_counter"
