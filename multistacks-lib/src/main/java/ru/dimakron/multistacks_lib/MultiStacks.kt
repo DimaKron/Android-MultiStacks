@@ -117,7 +117,8 @@ class MultiStacks private constructor(builder: Builder) {
         transactionListener?.onFragmentTransaction(currentFragment)
     }
 
-    fun clearStack(to: Class<*>? = null) { // Возможно, в будущем можно заменить сравнение типов на сравнение идентификаторов в стеке
+    // Возможно, в будущем можно заменить сравнение типов на сравнение идентификаторов в стеке
+    fun clearStack(to: Class<*>? = null) {
         val currentStack = fragmentStacks[selectedTabIndex]
 
         if (currentStack.size <= 1 || getCurrentFragment()?.let { it::class.java == to } == true) return
@@ -144,6 +145,14 @@ class MultiStacks private constructor(builder: Builder) {
 
         currentFragment = fragment
         transactionListener?.onFragmentTransaction(currentFragment)
+    }
+
+    // Возможно, в будущем можно заменить сравнение типов на сравнение идентификаторов в стеке
+    fun clearStackIncrementally(to: Class<*>? = null) {
+        val currentStack = fragmentStacks[selectedTabIndex]
+        loop@while (currentStack.size > 1 && getCurrentFragment()?.let { it::class.java == to } != true) {
+            pop()
+        }
     }
 
     fun replace(fragment: Fragment) {
