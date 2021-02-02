@@ -23,7 +23,7 @@ and line to modul level `build.gradle`
 
 ```groovy
 dependencies {
-    implementation 'com.github.DimaKron:Android-MultiStacks:1.1'
+    implementation 'com.github.DimaKron:Android-MultiStacks:1.2'
 }
 ```
 
@@ -71,7 +71,7 @@ Use following methods for navigation managent
 - `push(Fragment)` add new fragment to current tab
 - `replace(Fragment)` replace current with new fragment
 - `popFragments(Int)` remove X last fragments of current stack
-- `clearStack()` remove all fragments of current stack (except first)
+- `clearStack(Class?)` remove all fragments of current stack until first or specified fragment
 
 ### Other features
 
