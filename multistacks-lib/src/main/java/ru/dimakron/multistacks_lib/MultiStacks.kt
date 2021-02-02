@@ -94,27 +94,21 @@ class MultiStacks private constructor(builder: Builder) {
         transactionListener?.onFragmentTransaction(currentFragment)
     }
 
-    fun popFragments(depth: Int) {
-        require(depth >= 1) { "Pop depth should be greater than 0" }
-
+    fun pop() {
         val currentStack = fragmentStacks[selectedTabIndex]
 
-        if (depth >= currentStack.size - 1) {
-            clearStack()
-            return
-        }
+        if (currentStack.size <= 1) return
 
         val transaction = fragmentManager.beginTransaction()
 
-        for (i in 0 until depth) {
-            fragmentManager.findFragmentByTag(currentStack.removeAt(currentStack.size - 1).tag)?.let { transaction.remove(it) }
-        }
+        fragmentManager.findFragmentByTag(currentStack.removeLast().tag)?.let { transaction.remove(it) }
 
         var fragment = reattachPreviousFragment(transaction)
         if (fragment == null) {
             fragment = currentStack.lastOrNull()?: rootFragmentInitializers[selectedTabIndex].invoke()
             transaction.add(containerId, fragment, fragment.tag)
         }
+
         transaction.commit()
 
         executePendingTransactions()
@@ -204,7 +198,7 @@ class MultiStacks private constructor(builder: Builder) {
                 }
             }
         } else {
-            popFragments(1)
+            pop()
             return BackResult(BackResultType.OK)
         }
     }
